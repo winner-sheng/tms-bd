@@ -1,0 +1,25 @@
+html { margin: 0; border: 0pt; }
+body{
+    margin:0pt; 
+    padding:0pt;
+    font-size:12pt;
+}
+.draggable {padding:0.1em;border:0pt;}
+#body {padding:0pt; margin:0pt; }
+.fieldItem {padding: 0.1em; margin:0.1em; display:block; width:10em;}
+.highlight {border: 0pt;}
+.fieldHolder img {
+    display:none;
+    font-size:12pt;
+}
+.printPane{
+    page-break-after:always;
+    /* background:url(../images/tmpl/sf.jpg) no-repeat; */
+    font-size:12pt;
+}
+.noprint{
+    display: none;
+}
+*{
+    background-image: none !important;
+}

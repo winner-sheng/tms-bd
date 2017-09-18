@@ -1,0 +1,46 @@
+html { margin: 0; border: 0pt; }
+/*@page {*/
+    /*margin: 0;*/
+    /*size: 210mm 297mm;*/
+/*}*/
+body{
+    margin:0pt; 
+    padding:0pt;
+    font-size:12pt;
+}
+.draggable {padding:0.1em;border:0pt;}
+#body {padding:0pt; margin:0pt; }
+.fieldItem {padding: 0.1em; margin:0.1em; display:block; width:10em;}
+.highlight {border: 0pt;}
+.fieldHolder img {
+    display:none;
+    position: absolute;
+    z-index: 999;
+}
+.fieldHolder{
+    border:0px !important;
+}
+.printPane{
+    page-break-after:auto;
+    /* background:url(../images/tmpl/sf.jpg) no-repeat; */
+    font-size:12pt;
+    border: 0px !important;
+    position: relative;
+    width:100% !important;
+    height: 100% !important;
+}
+.printPane:last {
+    page-break-after:inherit;
+}
+.printPane *{
+    font-family:  "Times New Roman", "Helvetica Neue", Helvetica,"Songti SC", "SimSun", "FangSong", "仿宋", "STFangSong", "华文仿宋" !important;
+}
+.noprint{
+    display: none;
+}
+#header, div.header, div.breadcrumbs{
+    display: none!important;
+}
+*{
+    background-image: none !important;
+}

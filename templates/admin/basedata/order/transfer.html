@@ -1,0 +1,38 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list %}
+{% block extrastyle %}
+    <link rel="stylesheet" type="text/css" href="/static/css/icon.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/template.css"/>
+	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+    <style type="text/css">
+        button{margin-left: 10px;}
+    </style>
+    <script type="text/javascript">
+    $(document).ready(function(){
+        var selectedProducts = "{{ selected }}";
+    });
+    </script>
+{% endblock %}
+
+{% block content %}
+{#    <label for="agentList">请选择分销商</label>#}
+{#    <select name="agentList" id="agentList">#}
+{#    {% for agent in agents %}#}
+{#        <option value="{{ agent.code }}">{{ agent.name }}</option>#}
+{#    {% endfor %}#}
+{#    </select>#}
+{#    <button class="btn">确定</button>#}
+    <div style="border:dotted 1px blue;padding:5px;">请注意：<br>当前操作将转移订单的相关权益，即订单原来的关联收益都将被撤销（无论是否已结算，已结算入流水部分也将从流水中扣除）</div>
+    <form action="." method="post">{% csrf_token %}
+        {{ form }}
+        <p>已选择以下订单:</p>
+        <ul>
+{#            {{ orders|unordered_list }}#}
+            {% for order in orders %}
+                {{ order.order_no }} (推广人：{{ order.referrer_id }} | 归属企业：{{ order.org_uid }})
+            {% endfor %}
+        </ul>
+        <input type="hidden" name="action" value="{{ action }}" />
+        <input type="submit" name="apply" value="确定" />
+    </form>
+{% endblock %}

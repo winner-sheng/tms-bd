@@ -1,0 +1,48 @@
+{% load i18n admin_urls admin_static admin_list %}
+{#{% extends "admin/base_site.html" %}#}
+    {% block extrastyle %}
+    <link rel="stylesheet" type="text/css" href={% static "css/icon.css" %} />
+    <link rel="stylesheet" type="text/css" href={% static "css/template.css" %} />
+	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+    <style type="text/css">
+        button{margin-left: 10px;}
+    </style>
+    <script type="text/javascript">
+    $(document).ready(function(){
+
+    });
+    </script>
+    {% endblock %}
+
+{% block content %}
+    <button onclick="window.close()" style="position: fixed;top: 20px;right:30px">关闭</button>
+    {% if auth_error %}
+        <div style="color:#ff0000">{{ error }}</div>
+    {% else %}
+        <div style="border:dotted 1px blue">
+            导入须知：
+            <ul>
+                <li>数据源请使用excel格式文档(<a href={% static "tmpl/import_acct.xls" %}>下载资金流水导入模板</a>)</li>
+                <li>价格数据只能是单项数值类型，或者包含￥为前缀的单项数值</li>
+            </ul>
+        </div>
+        <form action="/tms-api/import_account_book" method="post" enctype="multipart/form-data">
+{#            {% csrf_token %}#}
+            <label for="files">请选择要上传的数据</label>
+            <input name="files" type="file" style="border:1px solid #e6e6e6">
+            <button type="submit">确定</button>
+        </form>
+        {% if count %}
+            <div style="color: #0000ff;">共导入 {{ count }} 条资金流水</div>
+        {% endif %}
+        {% if error %}
+            <div style="color: #ff0000;">
+                <ul>
+                    {% for err in error %}
+                    <li>{{ err | linebreaksbr }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}

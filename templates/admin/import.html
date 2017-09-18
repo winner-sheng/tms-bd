@@ -1,0 +1,89 @@
+{#{% extends "admin/base_site.html" %}#}
+    {% block extrastyle %}
+    <link rel="stylesheet" type="text/css" href="/static/css/icon.css">
+{#    <link rel="stylesheet" type="text/css" href="/static/css/template.css"/>#}
+	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+    <style type="text/css">
+        form{margin: 10px;}
+        button{border-width:0;outline:0;-webkit-appearance:none;padding: 5px;border-radius: 5px;}
+        ul{list-style-type: none;}
+        .btn_default{background-color:#00f;color:#fff}
+        .btn_primary{background-color:#04be02}
+        .btn_warn{background-color:#ef4f4f}
+        .btn_disabled{color:hsla(0,0%,100%,.6)}
+        .btn_disabled.btn_default{color:#c9c9c9}
+        .info{color: #222}
+        .warn{color:#ffbe00}
+        .error{color:#ef4f4f}
+    </style>
+    <script type="text/javascript">
+    $(document).ready(function(){
+        $("#omsForm").on('submit', function(){
+            return confirm('确定要从OMS系统导入商品数据吗？');
+        })
+    });
+    </script>
+    {% endblock %}
+
+{% block content %}
+    <button onclick="window.close()" style="position: fixed;top: 20px;right:30px">关闭</button>
+    {% if auth_error %}
+        <div style="color:#ff0000">{{ error }}</div>
+    {% else %}
+        <div style="border:dotted 1px blue">
+            导入须知：
+            <ul>
+                <li>数据源请使用excel格式文档(<a href="/static/tmpl/import_template.xls">下载商品导入模板</a>)</li>
+                <li>excel文档中必须包含一个命名为meta的sheet，用于说明数据源与系统表映射关系</li>
+                <li>如果数据源包含名称或者商品编码，则系统里如果有任一项数据已存在，则忽略该商品</li>
+                <li>商品价格数据只能是单项数值类型，或者包含￥为前缀的单项数值</li>
+                <li>如果商品信息中生产商或供应商名称在系统中不存在，则会自动添加一条新纪录</li>
+            </ul>
+        </div>
+        <form id="omsForm" action="/tms-api/admin/import_product" method="post" style="display: inline-block;">
+            <button type="submit" class="btn_primary">从OMS导入</button>
+            <input type="hidden" name="fromOms" value="1">
+        </form>
+        <form action="/tms-api/admin/import_product" method="post" enctype="multipart/form-data" style="display: inline-block;">
+{#            {% csrf_token %}#}
+            <label for="files">请选择要上传的商品数据</label>
+            <input name="files" type="file" style="border:1px solid #e6e6e6">
+            <button type="submit" class="btn_default">确定</button>
+        </form>
+        {% if error %}
+            <ul>
+                {% for err in error %}
+                <li>{{ err }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% if not initial %}
+            <ul>
+                <li>新增商品记录{{ product_add }}条</li>
+                <li>新增生产商记录{{ manufacturer_add }}条</li>
+                <li>新增供应商记录{{ supplier_add }}条</li>
+                <li>新增图片{{ image_add }}张</li>
+                {% if messages %}
+                    <li class="info">提示：（{{ messages|length }} 条）</li>
+                    <li>
+                        <ul>
+                            {% for msg in messages %}
+                            <li>{{ msg }}</li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endif %}
+                {% if warnings %}
+                    <li class="warn">警告：（{{ warnings|length }} 条）</li>
+                    <li>
+                        <ul>
+                            {% for warn in warnings %}
+                            <li>{{ warn }}</li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endif %}
+            </ul>
+        {% endif %}
+    {% endif %}
+{% endblock %}

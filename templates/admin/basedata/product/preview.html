@@ -1,0 +1,86 @@
+{% load i18n admin_urls admin_static admin_modify %}
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <title>{{ product.name }}</title>
+    <meta name="description" content="{{ product.brief }}">
+    <meta charset="UTF-8">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="www.twohou.com">
+    <meta name="apple-touch-fullscreen" content="yes"/>
+    <meta name="format-detection" content="telephone=no" />
+    <meta content="yes" name="apple-mobile-web-app-capable" />
+    <meta content="black" name="apple-mobile-web-app-status-bar-style" />
+
+    <meta name="wx_share_title" content="{{ product.name }}" />
+{#    <meta name="wx_share_link" content="http://tms.twohou.com:8001/" />#}
+    <meta name="wx_share_imgurl" content="{{ product.images | first }}" />
+
+    <link rel="stylesheet" href="{% static "css/weui/weui.min.css" %}" />
+    <link rel="stylesheet" href="{% static "css/weui/example.css" %}" />
+    <link rel="stylesheet" href="{% static "css/weui/jquery-weui.css" %}" />
+    <link rel="stylesheet" href="{% static "css/weui/style.css" %}" />
+
+    <script>
+        window._jsDebug = false;
+        window.qiniu_urlhead = "http://test.static.itravelbuy.twohou.com";
+        window.qiniupath = "";
+    </script>
+</head>
+<style>
+    .skip2myorders.show {
+        bottom: 55px;
+    }
+    body{
+        padding: 0;
+        min-width: 300px;
+        max-width: 640px;
+        margin: 0 auto;
+        height: 100%;
+        width: 100%;
+        overflow-x: hidden;
+    }
+</style>
+<body class="page_product_detail" onselect="return false;" onselectstart="return false;">
+<div class="swiperPics">
+    <div class="swiper-container">
+        <div class="swiper-wrapper">
+            {% for img in product.images %}
+            <div class="swiper-slide"><img src="{{ img }}" /></div>
+            {% endfor %}
+        </div>
+        <div class="swiper-pagination"></div>
+    </div>
+</div>
+<div class="weui_cells saleitem " style="margin-top: 0;">
+    <div class="weui_cell priceArea " style="padding-top: 15px;">
+        <div class="weui_cell_bd no_access weui_cell_primary spec">
+            <ul>
+                <li>品牌: {{ product.supplier.name }}</li>
+                <li>规格: {{ product.spec }}</li>
+                <li>产地: {{ product.origin_province }} </li>
+            </ul>
+        </div>
+        <div class="weui_cell_ft right" style="line-height: 150%;padding-right: 15px;">
+            <span class="price big red">{{ product.retail_price }}</span><br/>
+            销量:&nbsp;xx<br/>
+            <del>原价:<span class="price gray">{{ product.market_price }}</span></del>
+        </div>
+    </div>
+    <a class="weui_cell weui_cell_access"
+       id="btn_guiderinfo_link"
+       href="#">
+        <div class="weui_cell_bd weui_cell_primary">
+            来自<b>XXX</b>的精挑细选
+        </div>
+        <div class="weui_cell_ft">
+        </div>
+    </a>
+</div>
+<div class="panel_content" >
+    <div>{% autoescape off %}{{ product.intro }}{% endautoescape %}</div>
+</div>
+</body>
+</html>

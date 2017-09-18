@@ -1,0 +1,33 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list %}
+{% block extrastyle %}
+    <link rel="stylesheet" type="text/css" href="/static/css/icon.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/template.css"/>
+	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+    <style type="text/css">
+        button{margin-left: 10px;}
+    </style>
+    <script type="text/javascript">
+    $(document).ready(function(){
+        var selectedProducts = "{{ selected }}";
+    });
+    </script>
+{% endblock %}
+
+{% block content %}
+{#    <label for="agentList">请选择分销商</label>#}
+{#    <select name="agentList" id="agentList">#}
+{#    {% for agent in agents %}#}
+{#        <option value="{{ agent.code }}">{{ agent.name }}</option>#}
+{#    {% endfor %}#}
+{#    </select>#}
+{#    <button class="btn">确定</button>#}
+    <div style="border:dotted 1px blue;padding:5px;">请注意：<br>当前操作只转移收益，不影响订单的权益归属，如需转移订单的权益归属，请在订单列表中选择“转移订单权益归属”操作</div>
+    <form action="." method="post">{% csrf_token %}
+        {{ form }}
+        <p>已选择以下收益:</p>
+        <ul>{{ rewards|unordered_list }}</ul>
+        <input type="hidden" name="action" value="{{ action }}" />
+        <input type="submit" name="apply" value="确定" />
+    </form>
+{% endblock %}

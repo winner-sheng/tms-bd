@@ -1,0 +1,104 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_modify %}
+
+{% block extrahead %}{{ block.super }}
+<script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+{{ media }}
+{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "css/dialog/flat/zebra_dialog.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "jquery-ui/jquery-ui.min.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "sco/css/scojs.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "sco/css/sco.message.css" %}" />
+    <style type="text/css">
+        #dataPane{
+            display: table;
+            width: 100%;
+            border: 1px solid #eee;
+        }
+        .row{
+            display: table-row;
+        }
+        .cell{
+            display: table-cell;
+            border: 1px solid #eee;
+            text-align: right;
+            padding: 2px 5px;
+            font-size: 11px;
+            border-left: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            max-width: 300px;
+        }
+        .header{
+            display: table-cell;
+            border: 1px solid #eee;
+            text-align: center;
+            padding: 2px 5px;
+            font-size: 12px;
+            background: #e1e1e1 url({% static 'img/nav-bg.gif' %}) top left repeat-x;
+            border-left: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+        }
+        .note{
+            border: 1px dashed #ddd;
+            padding: 10px;
+        }
+        .footer{
+            width: 100%;
+        }
+        .footer div{
+            display: inline-block;
+            padding: 5px 10px;
+        }
+        .left{
+            text-align: left;
+        }
+        .right{
+            text-align: right;
+        }
+    </style>
+{% endblock %}
+{% block content_title %}<h1>{{ original.title }}</h1>{% endblock %}
+{% block content %}
+    <div id="dataPane">
+        <div class="row">
+            <div class="header">No.</div>
+        {% for head in report.header %}
+            <div class="header">{{ head }}</div>
+        {% endfor %}
+        </div>
+        {% for row in report.data %}
+            <div class="row">
+                <div class="cell">{{ forloop.counter }}</div>
+                {% for cell in row %}
+                <div class="cell">{{ cell }}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+        {% if report.summary %}
+            <div class="row">
+                <div class="header">汇总</div>
+            {% for cell in report.summary %}
+                <div class="header">{{ cell|default:'-' }}</div>
+            {% endfor %}
+            </div>
+        {% endif %}
+        {% if origin.memo %}
+        <div class="note">origin.memo</div>
+        {% endif %}
+    </div>
+    <div class="footer">
+        <div class="left">
+            {% if original.is_confirmed %}
+                <h3>商家已确认</h3>
+            {% elif is_owner %}
+                <input type="text" placeholder="添加备注">
+                <button>确认订单</button>
+            {% endif %}
+        </div>
+        <div class="right">出单时间：{{ original.create_time }}</div>
+    </div>
+{% endblock %}

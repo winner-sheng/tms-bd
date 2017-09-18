@@ -1,0 +1,78 @@
+{#{% extends "admin/base_site.html" %}#}
+{% load i18n admin_urls admin_static admin_list %}
+{% block extrastyle %}
+<link rel="stylesheet" type="text/css" href="/static/css/icon.css">
+<link rel="stylesheet" type="text/css" href="/static/css/template.css"/>
+<script type="text/javascript" src="/static/js/jquery.js"></script>
+<style type="text/css">
+    button{margin-left: 10px;}
+    button.importBtn{height: 38px; line-height: 32px;}
+    button img{vertical-align: middle; max-height:24px;}
+</style>
+<script type="text/javascript">
+$(document).ready(function(){
+    $('.importBtn').click(function(){
+        $("form").submit();
+        $("button[type=submit]").attr("disabled", "disabled");
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+    <button onclick="window.close()" style="position: fixed;top: 20px;right:30px">关闭</button>
+    {% if auth_error %}
+        <div style="color:#ff0000">{{ error }}</div>
+    {% else %}
+        <div style="border:dotted 1px blue;margin:10px;padding:10px;">
+            导入须知：
+            <ul>
+                <li>数据源请使用excel格式文档，见<a href="{% static "/static/tmpl/import_order_template.xlsx" %}?v170210">【通用订单导入模板】【20170210新修改】</a></li>
+                <li style="color:red;">如果使用销售商的商品编号，请确保该编号存在于商品与销售渠道关系表中</li>
+                <li style="color:red;">***请确保列名与模板一致，顺序可以不同***</li>
+            </ul>
+        </div>
+        <form action="/tms-api/admin/import/order" method="post" enctype="multipart/form-data">
+{#            {% csrf_token %}#}
+            <label for="files">请选择要上传的订单数据文件（excel格式）</label>
+            <input name="files" type="file" style="border:1px solid #e6e6e6">
+            <button name="general" class="importBtn">导入</button>
+            <!--<button name="rj" class="importBtn">
+                <img src="/static/images/logo-rj.gif">导入如家订单
+            </button>
+            <button name="ht" class="importBtn">
+                <img src="/static/images/logo-ht.png">导入汉庭订单
+            </button>-->
+        </form>
+        {% if count %}
+            <div style="color: #0000ff;">共导入 {{ count }} 条订单</div>
+        {% endif %}
+        {% if success %}
+            <div style="color: #0000ff;">
+                <ul>
+                    {% for succ in success %}
+                    <li>{{ succ }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% if error %}
+            <div style="color: #ff0000;">
+                <ul>
+                    {% for err in error %}
+                    <li>{{ err|linebreaksbr }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% if warning %}
+            <div style="color: #ff0000;">
+                <ul>
+                    {% for w in warning %}
+                    <li>{{ w }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}

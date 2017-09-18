@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>支付</title>
+    <link rel="stylesheet" media="screen" type="text/css" href="/static/bootstrap/css/bootstrap.css">
+	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+	<script type="text/javascript" src="/static/js/jquery.cookie.js"></script>
+	<script type="text/javascript" src="/static/js/md5.js"></script>
+    <script type="text/javascript" src="/static/bootstrap/js/bootstrap.min.js"></script>
+    <script src="/static/js/pingpp_pay.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="errorPane" style="border: dotted 1px red;display: none;text-align: center;"></div>
+<div id="msgPane" style="border: dotted 1px blue;display: none;text-align: center;">支付成功！</div>
+<div id="infoPane" style="border: dotted 1px green;text-align: left;"></div>
+<button class="btn btn-default btn-block btn-lg" onclick="javascript:history.back()">返回</button>
+<script>
+    //javascript方式获取请求的参数
+    function getRequestParam() {
+
+        var url = decodeURI(location.search); //获取url中"?"符后的字串
+        var theRequestParam = new Object();
+        if (url.indexOf("?") != -1) {
+            var str = url.substr(1);
+            var strs = str.split("&");
+            for(var i = 0; i < strs.length; i ++) {
+                theRequestParam[strs[i].split("=")[0]]=unescape(strs[i].split("=")[1]);
+            }
+        }
+        return theRequestParam;
+    }
+    function getUidtoken(){
+        $("#infoPane").append("<p> uidtoken: "+$.cookie['uidtoken']+"</p>")
+        return $.cookie['uidtoken'];
+    }
+    var params = getRequestParam();
+
+    if (params['error']){
+        $("#errorPane").text(params['error']).show();
+    }
+
+    if (params['charge']){
+        $("#infoPane").append("<p> charge: "+params['charge']+"</p>");
+        //validate charge
+//        if (md5(params['charge']+ getUidtoken()) == params['sign']){
+            var charge = JSON.parse(params['charge']);
+            $("#infoPane").append("<p> json charge: "+charge+"</p>")
+            pingpp.createPayment(charge, function(result, err) {
+                $("#infoPane").append("<p> result: "+result+"</p>")
+                if('success' == result){
+                    $("#msgPane").text("支付成功！").show();
+                }else {
+                    $("#infoPane").append("<p> err: "+JSON.stringify(err)+"</p>")
+                    $("#errorPane").text("支付失败："+err.msg+"|"+JSON.stringify(err.extra)).show();
+                }
+            });
+//        }else{
+//            //invalid charge
+//            $("#errorPane").text("对不起，支付凭据校验失败！").show();
+//        }
+
+    }
+</script>
+</body>
+</html>

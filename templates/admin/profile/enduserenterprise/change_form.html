@@ -1,0 +1,40 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls admin_static admin_modify %}
+{#{% block admin_change_form_document_ready %}{{ block.super }}#}
+{#    <link rel="stylesheet" type="text/css" href="{% static "sco/css/scojs.css" %}" />#}
+{#    <style>#}
+{#    .tooltip{min-width:250px;}#}
+{#    </style>#}
+{#    <script type="text/javascript">#}
+{#        var $ = jQuery = jQuery || django.jQuery;#}
+{#        (function($) {#}
+{#            $(document).ready(function() {#}
+{#                var msg = "除了普通的http链接以外，这些是特殊定义的："#}
+{#                           + "<br> * 跳商品详情，prod:{商品编码code}"#}
+{#                           + "<br> * 跳指定品牌，brand:{brandname}"#}
+{#                           + "<br> * 跳指定的分类，cate:{catename}"#}
+{#                           + "<br> * 跳指定的标签，tag:{tagname}"#}
+{#                           + "<br> * 跳指定的标签，supplier:{suppliername}"#}
+{#                           + "<br> * 比如：prod:P160809PQE9HX";#}
+{#                $('#id_link_to').scojs_tooltip({#}
+{#                  content: msg#}
+{#                  ,cssclass: 'pretty'#}
+{#                  ,delay: 500#}
+{#                });#}
+{#            });#}
+{#        })(django.jQuery);#}
+{#    </script>#}
+{#    <script type="text/javascript" src="{% static 'sco/js/sco.tooltip.js' %}"></script>#}
+{#{% endblock %}#}
+{% block submit_buttons_top %}
+    <div class="submit-row">
+    {% if True %}<input type="submit" value="审批通过" name="_pass" class="default" />{% endif %}
+    {% if True %}<input type="submit" value="拒绝申请" name="_reject" />{% endif %}
+    </div>
+{% endblock %}
+{% block submit_buttons_bottom %}
+    <div class="submit-row">
+    {% if True %}<input type="submit" value="审批通过" name="_pass"  class="default"/>{% endif %}
+    {% if True %}<input type="submit" value="拒绝申请" name="_reject" />{% endif %}
+    </div>
+{% endblock %}

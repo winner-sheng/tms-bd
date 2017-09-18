@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="订单,管理,系统">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>移动商城订单查询</title>
+    <link rel="stylesheet" media="screen" type="text/css" href="/static/bootstrap/css/bootstrap.css">
+	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+	<script type="text/javascript" src="/static/jquery-ui/jquery-ui.js"></script>
+    <script type="text/javascript" src="/static/bootstrap/js/bootstrap.min.js"></script>
+    <style type="text/css">
+        h5 span{font-weight: bold; color:red;}
+        input[type="date"]{line-height: 1em;}
+        div.header{background-color:#f1f4f5;height:100px;margin-top: 10px;padding-right:10px;border-bottom: 1px solid
+        #ddd;}
+        div.tab-pane{padding-top:10px;}
+        div#orderConfirmPane{display: block;}
+        /*#inquirePane{margin: 5px;}*/
+        button.state0, button.state1{margin: 10px;}
+    </style>
+    <script type="text/javascript">
+        var storeCode = "{{agent.store_code}}";
+        var orderNo = "";
+        var orderState = "";
+        var action = null;
+        var STATES = {0: '待付款', 1: '待发货'};
+        var MESSAGES = {
+            0: '已付款',
+            1: '已自提',
+            2: '已自提'
+        };
+        var BUTTONS_ENABLE = {
+            0: '.state0', //未付款，可付款，也可付款及自提
+            1: '.state1'  // 已付款，需自提
+        };
+
+        //根据模板填充数据
+        function render(str, obj, regexp) {
+            return str.replace(regexp || /\\?\{([^{}]+)\}/g, function (match, name) {
+                return (obj[name] === undefined) ? '' : obj[name];
+            });
+        }
+        var SUMMARY_TEMPLATE =
+                '共计：<span> {package_pcs} </span>件包裹 (含 <span>{pcs_amount}</span> 件商品)<br> '
+                + '商品: ￥<span>{shop_amount}</span> | 优惠：￥<span>{shop_amount_off}</span> <br>'
+                + '运费：￥<span>{ship_fee}</span> | 优惠：￥<span>{ship_fee_off}</span> <br>'
+                + '应付金额：￥<span style="font-size: 1.2em;">{pay_amount}</span>';
+        var ORDER_ITEM_TEMPLATE =
+                "<tr><td>{index}</td><td>{name}</td><td>{spec}</td><td>{brief}</td>"
+                +"<td>{unit}</td><td>{deal_price}</td><td>{pcs}</td><td>{subtotal}</td></tr>";
+        var ORDER_LIST_ITEM_TEMPLATE =
+                "<tr><td>{seq}</td><td>{order_no}</td><td>{state_display}</td><td>{product_list}</td>"
+                + "<td>{buyer}/{buyer_mobile}"
+                + "</td><td>{pcs_amount}</td><td>{shop_amount}</td><td>{shop_amount_off}</td><td>{ship_fee_amount}</td>"
+                + "<td>{ship_fee_off}</td><td style='color:red'>￥ {pay_amount}</td><td>{pay_date}</td></tr>";
+
+        //加载订单数据
+        function load(order){
+            var tbody = $("#orderDetail tbody").empty();
+            orderNo = order['order_no'];
+            orderState = order['order_state'];
+            $("#orderNo").html(orderNo+" (当前状态：<span style='color:red;'>"+STATES[orderState]+"</span>)");
+            for(var n in order['items']) {
+                var obj = order['items'][n];
+                var data = {
+                    "index": parseInt(n, 10) + 1,
+                    "name": obj['product']['name'],
+                    "spec": obj['product']['spec'],
+                    "brief": obj['product']['brief'],
+                    "unit": obj['product']["unit"],
+                    "deal_price": obj["deal_price"],
+                    "pcs": obj["pcs"],
+                    "subtotal": obj["deal_price"] * obj["pcs"]
+                };
+                tbody.append(render(ORDER_ITEM_TEMPLATE, data));
+                $("#summary").html(render(SUMMARY_TEMPLATE, order));
+            }
+            var html_str = render($("#shipTemplate").html(), order);
+            $("#shipPanel").html(html_str);
+            $("#orderPanel").show();
+            $("#btnBar button").hide();
+            if(orderState == 0){
+                 $("#roomNo").val("");
+                $("#billId").empty();
+                $(".pmsItem").removeAttr("disabled").show();
+            }else{
+                $(BUTTONS_ENABLE[orderState]).show();
+            }
+            $("#btnDebitBar").toggle(orderState == 0);  //only show while order to pay
+
+        }
+        function listOrder(orders){
+            var tbody = $("#orderList table tbody").empty();
+            var seq = 1;
+            $.each(orders, function(idx, order){
+                var product_list = '';
+                for(var n in order['items']) {
+                    var obj = order['items'][n];
+                    product_list += obj['product']['name'] + "*" + obj["pcs"] + "("+ obj['product']["unit"]+")<br>";
+                }
+                order['seq'] = seq;
+                order['product_list'] = product_list;
+                tbody.append(render(ORDER_LIST_ITEM_TEMPLATE, order));
+                seq ++;
+            });
+            if(seq > 100){
+                tbody.append('<tr colspan="12">请注意，每次查询最多显示100条订单记录!</tr>');
+            }
+
+        }
+        //获取订单数据
+        function getOrder() {
+            $("#orderPanel").hide();
+            var shopCode = $("#shopCode").val();
+            $.get('/tms-api/inquire_order',
+                    {"shop_code": shopCode},
+                    function (data) {
+                        if (!data || data.error || data.length == 0) {
+                            $("#errorMsg span").text(data.error ? data.error : "" );
+                            $("#errorMsg").show();
+                        } else {
+                            $("#errorMsg").hide();
+                            load(data);
+                        }
+                    }
+            );
+        }
+
+        //获取订单列表
+        function queryOrder() {
+            $("#orderPanel").hide();
+            $.get('/agent/list',
+                    {"from": $("#fromDate").val(),
+                    "to": $("#toDate").val()},
+                    function (data) {
+                        if (data.error) {
+                            $("#errorMsg span").text(data.error ? data.error : "" );
+                            $("#errorMsg").show();
+                        } else {
+                            $("#errorMsg").hide();
+                            listOrder(data);
+                        }
+                    }
+            );
+        }
+        //获取指定房号的住客清单
+        function queryRoomGuest() {
+            var roomNo = $("#roomNo").val();
+            if(!roomNo || !$.trim(roomNo)){
+                alert("请输入有效房间号！");
+                return;
+            }
+            $("#billId").empty();
+            $.get('/tms-api/huazhu/get_hotel_guest',
+                    {"hotel_id": storeCode,  //global variable
+                    "room_no": $("#roomNo").val()},
+                    function(data){
+                        if (data.error) {
+                            $("#errorMsg span").text(data.error ? data.error : "" );
+                            $("#errorMsg").show();
+                        } else {
+                            $("#errorMsg").hide();
+                            $.each(data, function(idx, val){
+                                var mobile = val['user_mobile'] || '无手机号';
+                                var htmlStr = '<option value="' + val['bill_id'] + '">' + val['user_name']
+                                               + " (" + val['bill_id'] + ")" + '</option>';
+                                $("#billId").append(htmlStr);
+                                $("#addToPmsBtn").show();
+                            });
+                        }
+                    }
+            );
+        }
+
+        function addToPms() {
+            var billId = $("#billId").val();
+            if (!billId){
+                //msg += "<br/><span style='color:red'>请注意：您还未选择入帐单，继续操作将导致PMS系统无法记录相关费用！</span>"
+                alert("请选择PMS入帐单！");
+                return false;
+            }
+            var msg = '此操作将把订单费用入账到PMS系统中，确认继续吗？<br/>注意：该操作不可恢复！';
+            confirmWithUser(msg, function() {
+                $.get('/tms-api/huazhu/add_to_pms',
+                        {
+                            "store_code": storeCode,
+                            "order_no": orderNo,
+                            "bill_id": billId
+                        },
+                        function (data) {
+                            if (data.error) {
+                                $("#errorMsg span").text(data.error ? data.error : "");
+                                $("#errorMsg").show();
+                            } else {
+                                $(".pmsItem").attr("disabled", "disabled");
+//                                $("#errorMsg span").text('入账PMS系统成功！');
+//                                $("#errorMsg").show();
+                                $("#btnDebitBar").hide();
+                                $("#btnBar button").hide();
+                                $(BUTTONS_ENABLE[orderState]).show();
+                            }
+                        }
+                );
+            });
+        }
+        function confirmWithUser(msg, func){
+            $('#confirmPanel').modal({
+                keyboard: true
+            });
+            $("#confirmMsg").html(msg);
+            action = func;
+        }
+        //确认用户支付
+        function payOrder(actType){
+            var billId = $("#billId").val();
+            var msg = '此操作将设置用户订单为【' + MESSAGES[actType] + '】，确认继续吗？<br/>注意：该操作不可恢复！';
+            if (orderState == 0 && !billId){
+                //msg += "<br/><span style='color:red'>请注意：您还未选择入帐单，继续操作将导致PMS系统无法记录相关费用！</span>"
+                alert("您还未选择入帐单，将导致PMS系统无法记录相关费用！");
+                return false;
+           }
+            confirmWithUser(msg, function(){
+                $.get('/tms-api/pay_offline',
+                        {
+                            "store_code": storeCode,
+                            "order_no": orderNo,
+                            "act_type": actType,
+                            "bill_id": billId
+                        },
+                        function (data) {
+                            if (!data || data.error || data.length == 0) {
+                                $("#errorMsg span").text('订单更新失败' + (data.error ? ": " + data.error : "" ));
+                                $("#errorMsg").show();
+                            } else {
+                                $("#errorMsg span").text('订单更新成功');
+                                $("#errorMsg").show();
+                                $("#orderPanel").hide();
+                            }
+                        }
+                );
+            });
+        }
+        //撤销用户订单
+        function revokeOrder(){
+            var msg = '此操作将【撤销】用户订单，确认继续吗？<br/>注意：该操作不可恢复！';
+            confirmWithUser(msg, function(){
+                $.get('/tms-api/revoke_order',
+                        {
+                            "store_code": storeCode,
+                            "order_no": orderNo
+                        },
+                        function (data) {
+                            if (!data || data.error || data.length == 0) {
+                                $("#errorMsg span").text('订单取消失败' + (data.error ? ": " + data.error : "" ));
+                                $("#errorMsg").show();
+                            } else {
+                                $("#errorMsg span").text('订单取消成功');
+                                $("#errorMsg").show();
+                                $("#orderPanel").hide();
+                            }
+                        }
+                );
+            });
+        }
+        $(function () {
+            $('#confirmPanel').modal('hide');
+            $("#continueBtn").click(function(e){
+                if (action){
+                    action();
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+<div class="container">
+	<div class="row header">
+        <div style="float: left;width:30%;height:100%;">
+            <img style="height:100%;width:100%;" style="margin-left: 0" alt="华住Logo" src="/static/images/huazhu_logo.png">
+        </div>
+        <div style="float: left;width:30%; padding-left: 10px; ">
+            <h4>{{agent.fullname}}，您好！ 【<a href="/admin/logout/">注销</a>】</h4>
+            <h4>{{agent.store}}</h4>
+            <h4>优惠码：<strong>{{agent.coupon}}</strong></h4>
+        </div>
+        <div style="float:left;width:40%;text-align: right;">
+            <h4>【<a target="_blank" href="/admin/password_change/">修改密码</a>】</h4>
+            <h4><a href="#" title="按住此链接拖到桌面可创建快捷方式">商城快捷入口</a></h4>
+        </div>
+    </div>
+	<div class="row" style="margin: 10px;">
+        <ul id="myTab" class="nav nav-tabs">
+           <li class="active">
+              <a href="#home" data-toggle="tab">用户订单处理</a>
+           </li>
+           <li><a href="#query" data-toggle="tab">门店订单查询</a></li>
+        </ul>
+        <div id="myTabContent" class="tab-content">
+           <div class="tab-pane fade in active" id="home">
+
+                <label id="inquirePane">请输入用户提交的购物码或订单号：
+                    <input value="{{ shop_code }}" class="input-medium search-query" type="text" id="shopCode" size="16"
+                           placeholder="购物码或订单号">
+                </label>
+                <button class="btn btn-success" style="margin-left: 10px;" onclick="getOrder()">查询用户购物清单</button>
+                <!--<div id="errorMsg" class="alert alert-danger alert-dismissable" style="display: none;">-->
+                    <!--<a href="#" class="close" data-dismiss="alert">&times;</a>-->
+                    <!--<button type="button" class="close" data-dismiss="alert" aria-hidden="true"></button>-->
+                    <!--<span></span>-->
+                <!--</div>-->
+                <div id="orderPanel" class="row" style="display: none;">
+                    <div class="panel panel-info">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">用户购物清单 - 订单号：<span id="orderNo"></span></h3>
+                        </div>
+                        <div class="panel-body">
+                            <table id="orderDetail" class="table table-hover table-striped table-responsive">
+                                <caption></caption>
+                                <thead>
+                                <tr>
+                                    <th>序号</th>
+                                    <th>商品名称</th>
+                                    <th>规格</th>
+                                    <th>简介</th>
+                                    <th>单位</th>
+                                    <th>单价</th>
+                                    <th>数量</th>
+                                    <th>小计</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                            <h5 id="summary" style="text-align: right;"></h5>
+                            <div id="shipPanel" class="row"></div>
+                            <div id="btnBar" style="margin: 10px;">
+                                <div id="btnDebitBar" class="state0">
+                                    <label>入账房号：<input class="pmsItem" id="roomNo" placeholder="请输入房间号"></label>
+                                    <button id="btnQueryBill" class="state0 pmsItem" onclick="queryRoomGuest()">
+                                        &gt; 查房账 &gt;
+                                    </button>
+                                    <label for="billId">请选择入账单：</label>
+                                    <select class="pmsItem" name="billId" id="billId">
+                                    </select>
+                                    <div>
+                                    <button id="addToPmsBtn" class="btn btn-danger"
+                                            style="margin-left: 10px;" onclick="addToPms()">用户已确认入账PMS</button>
+                                    </div>
+                                </div>
+                                <div id="orderConfirmPane">
+                                <button id="btnPay" class="btn btn-danger state0" style="margin-left: 10px;" onclick="payOrder(0)
+                                ">用户【已付款】，将由供应商发货</button>
+                                <button id="btnPayAndPick" class="btn btn-primary state0" style="margin-left: 10px;" onclick="payOrder(1)
+                                ">用户【已付款并自提商品】</button><br>
+                                <!--<button id="btnPick" class="btn btn-danger state1" style="margin-left: 10px;" onclick="payOrder(2)-->
+                                <!--">用户已在线付款并【自提商品】</button>-->
+                                <button id="btnRevoke" class="btn btn-default state0" style="margin-left: 40px;" onclick="revokeOrder()
+                                ">用户取消该订单</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="shipTemplate" class="row" style="display: none;">
+                    <div class="col-xs-10 col-md-8 col-lg-6">
+                    <table class="table">
+                        <caption>联系人及收件信息</caption>
+                        <tbody>
+                        <tr class="active">
+                            <td>购买人：{buyer}</td>
+                            <td>购买人手机：{buyer_mobile}</td>
+                        </tr>
+                        <tr class="success">
+                            <td>收件人：{receiver}</td>
+                            <td>收件人手机：{receiver_mobile}</td>
+                        </tr>
+                        <tr class="success">
+                            <td colspan="2">收件人地址：{ship_address}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+           </div>
+           <div class="tab-pane fade in" id="query">
+                <div id="orderListPane">
+                    <div id="searchBar">
+                        按订单付款时间查询：
+                        <input id="fromDate" type="date"> - <input id="toDate" type="date">
+                        <button id="searchBtn" onclick="queryOrder()">查询</button>
+                    </div>
+                    <div id="orderList">
+                        <table class="table table-striped table-responsive">
+                           <caption>订单列表</caption>
+                           <thead>
+                              <tr>
+                                 <th>序号</th>
+                                 <th>订单号</th>
+                                 <th>状态</th>
+                                 <th>商品清单</th>
+                                 <th>购买人/手机</th>
+                                 <th>商品数量</th>
+                                 <th>商品总额</th>
+                                 <th>商品优惠</th>
+                                 <th>邮费总额</th>
+                                 <th>邮费优惠</th>
+                                 <th>支付总额</th>
+                                 <th>支付时间</th>
+                              </tr>
+                           </thead>
+                           <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+           </div>
+        </div>
+        <div id="errorMsg" class="alert alert-danger" style="display: none;">
+            <a href="#" class="close" data-dismiss="alert">&times;</a>
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true"></button>
+            <span></span>
+        </div>
+    <!-- 模态框（Modal） -->
+    <div class="modal fade" id="confirmPanel" tabindex="-1" role="dialog"
+       aria-labelledby="myModalLabel" aria-hidden="true">
+       <div class="modal-dialog">
+          <div class="modal-content">
+             <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"
+                   aria-hidden="true">×
+                </button>
+                <h4 class="modal-title" id="myModalLabel">
+                   操作确认
+                </h4>
+             </div>
+             <div class="modal-body" id="confirmMsg">
+             </div>
+             <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">
+                   取消
+                </button>
+                <button id="continueBtn" type="button" class="btn btn-primary" data-dismiss="modal">
+                   我知道了，继续
+                </button>
+             </div>
+          </div><!-- /.modal-content -->
+       </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+</div>
+</body>
+</html>

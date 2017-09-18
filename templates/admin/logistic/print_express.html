@@ -1,0 +1,170 @@
+{% load i18n admin_urls admin_static admin_list %}
+{#{% extends "admin/base_site.html" %}#}
+    {% block extrastyle %}
+    <link rel="stylesheet" type="text/css" href="{% static "css/icon.css" %}">
+    <link rel="stylesheet" type="text/css" href="{% static "jquery-ui/jquery-ui.min.css" %}">
+    <link rel="stylesheet" type="text/css" href="{% static "jquery-ui/jquery-ui.theme.min.css" %}">
+    <link rel="stylesheet" type="text/css" href="{% static "css/template.css" %}">
+    <link rel="stylesheet" type="text/css" href="{% static "css/dialog/flat/zebra_dialog.css" %}" />
+{#    <link rel="stylesheet" type="text/css" href="/static/css/print.css"/>#}
+    <link rel="stylesheet" type="text/css" href="{% static "css/print_express.css" %}" media="print"/>
+{#	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>#}
+	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+	<script type="text/javascript" src="{% static "jquery-ui/jquery-ui.min.js" %}"></script>
+    <script type="text/javascript" src="{% static 'js/zebra_dialog.js' %}"></script>
+{#	<script type="text/javascript" src="http://apps.bdimg.com/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>#}
+{#    <script type="text/javascript" src="/static/bootstrap/js/bootstrap.min.js"></script>#}
+    <script type="text/javascript" src="{% static "js/jquery.PrintArea.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/express_template.js" %}"></script>
+    <style type="text/css">
+        div.header{
+            /*margin: 10px 20px 5px 20px;*/
+            padding: 10px;
+            width: 100%;
+            border: solid #eee 1px;
+        }
+        div.header *{font-size: 14px;}
+        button{margin-left: 10px;}
+    </style>
+    <script type="text/javascript">
+    $(document).ready(function(){
+        var setting = clone(DEFAULT_SETTING);
+        var templates = {{ templates | safe }};
+        var orders = {{ orders | safe }};
+        var senders = {{ sender | safe }};
+        var printForm = {"date": new Date().toLocaleDateString()};
+        var errorMsg = '';
+        var tmplDict = {};
+        var senderDict = {};
+        if(templates && templates instanceof Array){
+            for(var i in templates){
+                $("#tmplList").append('<option value="'+templates[i]['id']+'">'+templates[i]['name']+'</option>');
+                tmplDict[templates[i]['id']] = templates[i];
+            }
+        }else{
+            errorMsg = "您还没有打印模板，请先添加！";
+        }
+        if(senders && senders instanceof Array){
+            for(var i in senders){
+                $("#senderList").append('<option value="'+senders[i]['id']+'">'+senders[i]['name']+'</option>');
+                senderDict[senders[i]['id']] = senders[i];
+            }
+        }else{
+            errorMsg += "您还没有寄件人信息，请先添加！";
+        }
+
+        function fillData(order, template){
+            var holders = template.rootElement.children(".fieldHolder");
+            if($("#senderList").children().length == 0){
+                $.Zebra_Dialog("请先添加快递单发件人信息。");
+                return false;
+            }
+            var sender = senderDict[$("#senderList").children("option:selected").val()];
+            $.each(holders, function(id, elem){
+                var prop = $(elem).attr("field");
+                var ref = prop.split(".");
+                var obj = {};
+                if(ref[0] == "order"){
+                    obj = order;
+                }else if(ref[0] == "sender"){
+                    obj = sender;
+                }else if(ref[0] == "printForm"){
+                    obj = printForm;
+                }
+                $(elem).text(obj[ref[1]]);
+            });
+            return true;
+        }
+
+        function listOrder(container, orders, setting) {
+            if (orders && orders instanceof Array) {
+                for (var i in orders) {
+                    var tmpl = $('<div class="printPane"></div>');
+                    container.append(tmpl);
+                    var template = new Template(tmpl);
+                    template.load(setting);
+                    if (!fillData(orders[i], template)){
+                        break;
+                    }
+                }
+            }
+        }
+
+        /*
+        $.get(URL_GET_TEMPLATE,
+                {},
+                function(data){
+                    if(data && data.length>0){
+                        for(var i in data){
+                            $("#tmplList").append('<option value="'+data[i].id+'">'+data[i].name+'</option>');
+                        }
+                    }
+                },
+                "json"
+        );
+        var tmpl = $('<div id="pTemplate" class="droppable"></div>');
+        $("#printPane").append(tmpl);
+        var template = new Template(tmpl);
+        template.load(data[i]);
+        */
+
+
+        $("#tmplList").change(function(e){
+            var tmplId = $(this).children("option:selected").val();
+            $("#printPanel").empty();
+            listOrder($("#printPanel"), orders, tmplDict[tmplId]);
+        });
+
+        $("#senderList").change(function(e){ //same as above
+            $("#tmplList").change();
+        });
+
+        $("button.actBtn").click(function(e){
+            var tmplId = $("#tmplList").children("option:selected").val();
+            if(!parseInt(tmplId, 10)) {
+                $.Zebra_Dialog('请选择打印模板！');
+                return;
+            }
+            var name = $(this).attr("name");
+            if(name == "tryOne"){
+                $(".printPane:first").printArea();
+            }else if(name == "printAll"){
+                $(".printPane").printArea();
+            }
+
+        });
+
+        if(errorMsg) {
+            $("#errorPane").text("注意：" + errorMsg);
+            $("button.actBtn").hide();
+        }else{
+            $("#tmplList").change();
+            $("#errorPane").hide();
+            $("button.actBtn").show();
+        }
+    });
+    </script>
+    {% endblock %}
+
+{% block content %}
+<div class="noprint header">
+    <div class="error-pane" id="errorPane"></div>
+    <a href="javascript:history.back();">返回</a>
+    <select id="tmplList">
+{#        <option value="0">请选择打印模板：</option>#}
+    </select>
+    <button type="button" name="tryOne" class="actBtn btn btn-success">选好了，试打一张</button>
+    <button type="button" name="printAll" class="actBtn btn btn-danger">选好了，全部打印</button>
+    <select id="senderList">
+{#        {% for sender in senders %}#}
+{#            <option value="{{ sender.id }}">{{ sender.name }}</option>#}
+{#        <option value="0">请选择打印模板：</option>#}
+{#        {% endfor %}#}
+    </select>
+</div>
+{#{% for order in orders %}#}
+{#<div>{{ order.order_no }}</div>#}
+{#{% endfor %}#}
+
+<div id="printPanel"></div>
+{% endblock %}

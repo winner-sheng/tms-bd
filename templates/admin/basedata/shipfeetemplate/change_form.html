@@ -1,0 +1,15 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls admin_static admin_modify %}
+{% block extrastyle %}{{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static "css/district-selector.css" %}?v4" />
+{% endblock %}
+{% block admin_change_form_document_ready %}{{ block.super }}
+    <script type="text/javascript" src="{% static 'js/district-selector.js' %}?v20160714"></script>
+    <script type="text/javascript">
+        (function($) {
+            $(document).ready(function() {
+                $("input[id$=areas]").district_select();
+            });
+        })(django.jQuery);
+    </script>
+{% endblock %}

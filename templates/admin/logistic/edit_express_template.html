@@ -1,0 +1,223 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list %}
+    {% block extrastyle %}
+{#    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">#}
+{#    <meta name="keywords" content="布丁,订单,管理,系统">#}
+{#    <meta name="description" content="{{ site_title }}">#}
+{#    <meta name="viewport" content="width=device-width, initial-scale=1">#}
+{#    <title>{{ site_title }}-快递单模板管理</title>#}
+{#    <link rel="stylesheet" media="screen" type="text/css" href="/static/bootstrap/css/bootstrap.css">#}
+    <link rel="stylesheet" type="text/css" href={% static "css/icon.css" %} />
+    <link rel="stylesheet" type="text/css" href={% static "jquery-ui/jquery-ui.min.css" %} />
+    <link rel="stylesheet" type="text/css" href={% static "jquery-ui/jquery-ui.theme.min.css" %} />
+    <link rel="stylesheet" type="text/css" href={% static "css/template.css" %} />
+    <link rel="stylesheet" type="text/css" href="{% static "css/dialog/flat/zebra_dialog.css" %}" />
+    <link rel="stylesheet" type="text/css" href={% static "css/print.css" %} media="print"/>
+{#	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>#}
+	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+	<script type="text/javascript" src={% static "jquery-ui/jquery-ui.min.js" %}></script>
+    <script type="text/javascript" src="{% static 'js/zebra_dialog.js' %}"></script>
+{#	<script type="text/javascript" src="http://apps.bdimg.com/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>#}
+{#    <script type="text/javascript" src="/static/bootstrap/js/bootstrap.min.js"></script>#}
+    <script type="text/javascript" src={% static "js/jquery.PrintArea.js" %}></script>
+    <script type="text/javascript" src={% static "js/express_template.js" %}></script>
+    <script type="text/javascript">
+        var templateId = '{{ object_id|default_if_none:"0" }}';
+{#        var shapeImgId = 0;#}
+        var csrf = "{{ csrf_token }}";
+        var template = {};
+        $(document).ready(function(){
+            template = Template($("#pTemplate"), true);
+
+            var FIELD_SETTING = [
+                {"field": "order.buyer", "text": "购买人-姓名"},
+                {"field": "order.buyer_mobile", "text": "购买人-手机"},
+                {"field": "order.buyer_note", "text": "购买人-留言"},
+                {"field": "order.receiver", "text": "收件人-姓名"},
+                {"field": "order.receiver_mobile", "text": "收件人-手机"},
+                //{"field": "order.ship_province", "text": "收件人-省份"},
+                {"field": "order.ship_address", "text": "收件人-地址"},
+                {"field": "order.order_no", "text": "订单号"},
+                {"field": "order.order_date", "text": "下单日期"},
+                {"field": "order.pay_amount", "text": "支付总额"},
+                {"field": "sender.name", "text": "寄件人-姓名"},
+                {"field": "sender.address", "text": "寄件人-地址"},
+                {"field": "sender.post_code", "text": "寄件人-邮编"},
+                {"field": "sender.mobile", "text": "寄件人-电话"},
+                {"field": "printForm.date", "text": "打印日期"}
+            ];
+
+            //initialize field list
+            for(var i in FIELD_SETTING) {
+                $("#fieldList").append(
+                    '<button class="fieldItem button button-block" field="' +
+                        FIELD_SETTING[i]['field'] + '">' + FIELD_SETTING[i]['text'] + '</button>'
+                );
+            }
+
+            $( "#accordion" ).accordion({
+                heightStyle: "content"
+            });
+            $(".settingToolbar").draggable();
+            $(".droppable").droppable({
+                //drop : function (event, ui) {
+                //}
+            });
+
+            $("#tmplList").change(function(){
+                var tmplId = $("#tmplList").children("option:selected").val()
+                if (tmplId == "0"){
+                    //create a new template
+                    template.reset();
+                }else{
+                    template.loadById(tmplId);
+                }
+            });
+            $("#tmplShapeImage").change(function(){
+                var selected = $("#tmplShapeImage").children("option:selected");
+                var imgId = selected.val();
+                if (imgId) {
+                    template.setBackground(imgId, "url(" + selected.attr("imgUrl") + ")");
+                    if ($("#tmplName").val() == DEFAULT_SETTING.name) {
+                        $("#tmplName").val(selected.text() + DEFAULT_SETTING.name); // set default template name
+                    }
+                }else{
+                    $.Zebra_Dialog('请选择模板底图');
+                }
+            });
+            $("#tmplPadding").change(function(){
+                var padding = parseInt($(this).val(), 10);
+                template.rootElement.css("padding", padding+"pt");
+            });
+            //var NAME_MAP = {"width": "宽度", "height": "高度", "margin": "边距", "name": "模板名称"};
+            $("#tmplWidth").change(function(){
+                template.setWidth($(this).val());
+            });
+            $("#tmplHeight").change(function(){
+                template.setHeight($(this).val());
+            });
+            $(".fieldItem").click(function (e) {
+                template.createLabel($(this).attr("field"), $(this).text());
+            });
+
+            var ACTION_MAP = {
+                "preview": template.preview,
+                "print": template.print,
+                "save": template.save,
+                "copy": template.copy,
+                "delete": template.delete,
+                "clear": template.clear,
+                "zoomOut": template.zoomOut,
+                "zoomIn": template.zoomIn
+            };
+            $(".actBtn").click(function (e) {
+                var action = $(this).attr("name");
+                if(ACTION_MAP[action]){
+                    ACTION_MAP[action].call(template);  //use call to avoid "this" invocation error
+                }else if (action == "bold") {
+                    template.switchFont("font-weight", "bold");
+                } else if (action == "italic") {
+                    template.switchFont("font-style", "italic");
+                }
+            });
+
+            // templateId defined in the page
+            if(templateId && parseInt(templateId)>0){
+                //template.loadById(templateId);
+                $("#tmplList").children("option[value="+templateId+"]").attr("selected", "selected");
+                $("#tmplList").change();
+            }else{
+                template.load(clone(DEFAULT_SETTING));
+            }
+        });
+    </script>
+    {% endblock %}
+{#{% if not is_popup %}#}
+{#    {% block breadcrumbs %}#}
+{#        <div class="breadcrumbs">#}
+{#            <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>#}
+{#            &rsaquo; <a#}
+{#                href="{% url 'admin:app_list' app_label=cl.opts.app_label %}">{{ cl.opts.app_config.verbose_name }}</a>#}
+{#            &rsaquo; {{ cl.opts.verbose_name_plural|capfirst }}#}
+{#        </div>#}
+{#    {% endblock %}#}
+{#{% endif %}#}
+
+{% block content %}
+<div style="width:100%;height:100%;">
+    <div id="pTemplate" class="droppable"></div>
+    <div class="settingToolbar">
+        <div id="accordion">
+            <h3>模板设置</h3>
+            <div class="settingPanel">
+                <select class="setting" name="name" id="tmplList">
+                    <option value="0">-- 创建新模板 --</option>
+                    {% for tmpl in templates %}
+                    <option value="{{ tmpl.id }}" tmplName="{{ tmpl.name }}">
+                        {{ tmpl.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <select class="setting" name="shapeImage" id="tmplShapeImage">
+                    <option value="">-- 选择模板底图 --</option>
+                    {% for img in shape_images %}
+                    <option value="{{ img.id }}" imgUrl="{{ img.origin.url }}">{{ img.image_desc }}</option>
+                    {% endfor %}
+                </select>
+                <input class="setting" id="tmplName" placeholder="请输入模板名称" style="width:100%;" value="">
+                <label title="共享的模板仍然只有创建人可以维护">
+                {% if user.is_superuser %}
+                    <input class="setting" name="type" id="tmplIsPublic" type="checkbox" value="1"> 共享
+                {% else %}
+                    <input disabled class="setting" name="type" id="tmplIsPublic" type="checkbox" value="0"> 共享
+                {% endif %}
+                </label>
+
+                <label title="模板打印可见区域宽度">宽度:
+                    <input class="setting" name="width" id="tmplWidth" type="number" style="width:50%;"> pt
+                </label>
+                <label title="模板打印可见区域高度">高度:
+                    <input class="setting" name="height" id="tmplHeight" type="number" style="width:50%;"> pt
+                </label>
+                <label title="模板打印可见区域内边距，即Padding" class="hidden">边距:
+                    <input class="setting" name="margin" id="tmplPadding" type="number" style="width:50%;"> pt
+                </label>
+                <div>
+                    <button name="clear" class="actBtn button button-block">清除所有字段</button>
+                    <button name="preview" class="actBtn button" style="width:45%;">预览</button>
+                    <!-- <a name="print" class="actBtn easyui-linkbutton" data-options="iconCls:'icon-print'">*打印*</a> -->
+                    <button name="save" class="actBtn button" style="width:45%;">保存</button>
+                    <button name="copy" class="actBtn button" style="width:45%;">复制</button>
+                    <button name="delete" class="actBtn button" style="width:45%;">删除</button>
+                </div>
+            </div>
+            <h3>选择打印字段</h3>
+            <div id="fieldList" style="height:300px;overflow: auto;">
+                <!--
+                <button class="fieldItem button button-block" field="order.buyer">购买人-姓名</button>
+                <button class="fieldItem button button-block" field="order.buyer_mobile">购买人-手机</button>
+                <button class="fieldItem button button-block" field="order.buyer_note">购买人-留言</button>
+                <button class="fieldItem button button-block" field="order.receiver">收货人-姓名</button>
+                <button class="fieldItem button button-block" field="order.ship_address">收货人-地址</button>
+                <button class="fieldItem button button-block" field="order.order_no">订单号</button>
+                <button class="fieldItem button button-block" field="order.order_date">下单日期</button>
+                <button class="fieldItem button button-block" field="order.pay_amount">支付总额</button>
+                <button class="fieldItem button button-block" field="sender.name">寄件人-姓名</button>
+                <button class="fieldItem button button-block" field="sender.address">寄件人-地址</button>
+                <button class="fieldItem button button-block" field="sender.post_code">寄件人-邮编</button>
+                <button class="fieldItem button button-block" field="sender.mobile">寄件人-电话</button>
+                -->
+            </div>
+            <h3>打印项设置</h3>
+            <div class="settingPanel">
+                <label>打印项: <span id="currentItem" style="font-weight: bold;"></span></label>
+                <label>字体:</label>
+                <button class="actBtn button" name="zoomIn">放大</button>
+                <button class="actBtn button" name="zoomOut">缩小</button><br>
+                <button class="actBtn button" name="bold">粗体</button>
+                <button class="actBtn button" name="italic">斜体</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

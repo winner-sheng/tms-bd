@@ -1,0 +1,32 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list %}
+{% block title %} 交易管理系统 {% endblock %}
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">交易管理系统</a></h1>
+{% endblock %}
+{% if not is_popup %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="javascript:history.go(-1)">返回</a>
+</div>
+{% endblock %}
+{% endif %}
+{% block extrastyle %}
+    <link rel="stylesheet" type="text/css" href="/static/css/icon.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/template.css"/>
+	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+    <style type="text/css">
+        button{margin-left: 10px;}
+    </style>
+{% endblock %}
+
+{% block content %}
+    <form action="." method="post">{% csrf_token %}
+        {{ form }}
+        <p>已选择以下商品:</p>
+        <ul>{{ products|unordered_list }}</ul>
+        <input type="hidden" name="action" value="{{ action }}" />
+        <input type="submit" name="apply" value="确定" />
+    </form>
+{% endblock %}

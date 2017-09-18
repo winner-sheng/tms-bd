@@ -1,0 +1,408 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_modify %}
+
+{% block extrahead %}{{ block.super }}
+<script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+{{ media }}
+{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "css/dialog/flat/zebra_dialog.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "jquery-ui/jquery-ui.min.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "sco/css/scojs.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "sco/css/sco.message.css" %}" />
+    <style type="text/css">
+        option{font-size: 12px;}
+        #m_fieldset{
+            width: 100%;
+        }
+        #setSpecBtn{
+{#            width: 100%;#}
+            display: block;
+            margin: 0;
+            padding: 2px 5px 3px 5px;
+            font-size: 11px;
+            text-align: left;
+            font-weight: bold;
+            background: #7CA0C7 url({% static 'admin/img/default-bg.gif' %}) top left repeat-x;
+            color: #fff;
+        }
+        #m_fieldset table{
+            width: 100%;
+        }
+        #m_fieldset table tr:nth-child(odd){
+            background: #EDF3FE;
+        }
+        #m_fieldset table td{
+            max-width: 15%;
+            min-width: 3em;
+            vertical-align: middle;
+        }
+        #m_fieldset input{
+            max-width: 90%;
+        }
+        #tmplRow{
+            display: none;
+        }
+        tr:first-child .m_delete_btn{
+            display: none;
+        }
+        input.error{
+            border: 1px solid red;
+        }
+    </style>
+{% endblock %}
+
+{% block coltype %}colM{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-form{% endblock %}
+
+{% if not is_popup %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; {% if has_change_permission %}<a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>{% else %}{{ opts.verbose_name_plural|capfirst }}{% endif %}
+&rsaquo; {% if add %}{% trans 'Add' %} {{ opts.verbose_name }}{% else %}{{ original|truncatewords:"18" }}{% endif %}
+</div>
+{% endblock %}
+{% endif %}
+
+{% block content %}<div id="content-main">
+{% block object-tools %}
+{% if change %}{% if not is_popup %}
+  <ul class="object-tools">
+    {% block object-tools-items %}
+    <li>
+        {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
+        <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
+    </li>
+    {% if has_absolute_url %}
+    <li>
+        <div style="display: none;" id="qrcode"></div>
+        <a id="wechatPreview" target="_blank" title="微信扫码预览或点击在电脑上查看" href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a>
+    </li>
+    {% endif %}
+    {% endblock %}
+  </ul>
+{% endif %}{% endif %}
+{% endblock %}
+<form {% if has_file_field %}enctype="multipart/form-data" {% endif %}action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}{% block form_top %}{% endblock %}
+<div>
+{% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1" />{% endif %}
+{% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}" />{% endif %}
+{% if save_on_top %}{% block submit_buttons_top %}{% submit_row %}{% endblock %}{% endif %}
+{% if errors %}
+    <p class="errornote">
+    {% if errors|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
+    </p>
+    {{ adminform.form.non_field_errors }}
+{% endif %}
+
+{% block field_sets %}
+{% for fieldset in adminform %}
+  {% include "admin/includes/fieldset.html" %}
+{% endfor %}
+{% endblock %}
+
+{% block after_field_sets %}{% endblock %}
+
+{% block inline_field_sets %}
+{% for inline_admin_formset in inline_admin_formsets %}
+    {% include inline_admin_formset.opts.template %}
+{% endfor %}
+    {% if add %}
+    <!-- not visible -->
+    {% elif original.is_multispec %}
+    <fieldset class="module" id="m_fieldset">
+    <h2>设置多规格商品</h2>
+{#    <a id="setSpecBtn">设置多规格商品</a>#}
+    <table width="100%">
+        <thead>
+        <tr>
+            <th>规格标签({{ original.spec_tag_desc }})</th>
+            <th>名称</th>
+            <th>编码</th>
+            <th>价格（￥）</th>
+{#            <th>运费（￥）</th>#}
+            <th>重量(g)/尺寸(mm)</th>
+            <th>购买限制</th>
+            <th>库存</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tr>
+            <td>
+                标签1：<input type="text" placeholder="填写规格标签" name="m_spec_tag1" value="{{ original.spec_tag1 | default:'' }}"><br>
+                标签2：<input type="text" placeholder="填写规格标签" name="m_spec_tag2" value="{{ original.spec_tag2 | default:'' }}"><br>
+                标签3：<input type="text" placeholder="填写规格标签" name="m_spec_tag3" value="{{ original.spec_tag3 | default:'' }}"><br>
+                注：不同规格商品的规格标签数量要一致
+            </td>
+            <td><input type="text" name="m_name" value="{{ original.name }}"></td>
+            <td><input type="hidden" name="m_code" value="{{ original.code }}"> <span>{{ original.code }}</span></td>
+            <td>
+                供货价：<input class="vIntegerField" type="text" name="m_cost" value="{{ original.cost | default:'' }}"><br>
+                市场价：<input class="vIntegerField" type="text" name="m_market_price" value="{{ original.market_price | default:'' }}"><br>
+                零售价：<input class="vIntegerField" type="text" name="m_retail_price" value="{{ original.retail_price | default:'' }}"><br>
+                渠道结算价：<input class="vIntegerField" type="text" name="m_settle_price" value="{{ original.settle_price | default:'' }}">
+            </td>
+            <td>
+                重量（克）：<input class="vIntegerField" type="text" name="m_weight" value="{{ original.weight | default:'' }}"><br>
+                长（毫米）：<input class="vIntegerField" type="text" name="m_length" value="{{ original.length | default:'' }}"><br>
+                宽（毫米）：<input class="vIntegerField" type="text" name="m_width" value="{{ original.width | default:'' }}"><br>
+                高（毫米）：<input class="vIntegerField" type="text" name="m_height" value="{{ original.height | default:'' }}">
+            </td>
+{#            <td>#}
+{#                首件：<input class="vIntegerField" type="text" name="m_initial_ship_fee" value="{{ original.initial_ship_fee |default:0 }}"><br>#}
+{#                次件：<input class="vIntegerField" type="text" name="m_second_ship_fee" value="{{ original.second_ship_fee |default:0 }}"><br>#}
+{#                满X包邮：<input class="vIntegerField" type="text" name="m_free_ship_cnt" value="{{ original.free_ship_cnt |default:0 }}">#}
+{#            </td>#}
+            <td>
+                下限：<input class="vIntegerField" type="text" name="m_lower_limit" value="{{ original.lower_limit | default:0 }}"><br>
+                上限：<input class="vIntegerField" type="text" name="m_upper_limit" value="{{ original.upper_limit | default:0 }}">
+            </td>
+            <td>
+                库存：<input class="vIntegerField" type="text" name="m_stock_volume" value="{{ original.stock_volume | default:999 }}"><br>
+                库存阈值：<input class="vIntegerField" type="text" name="m_stock_volume_threshold" value="{{ original.stock_volume_threshold | default:10 }}">
+            </td>
+            <td>
+                <a name="m_delete_btn" class="button m_delete_btn">删除</a><br><br>
+                <a name="m_add_btn" class="button m_add_btn">复制</a>
+            </td>
+        </tr>
+    </table>
+    </fieldset>
+    {% endif %}
+{% endblock %}
+
+{% block after_related_objects %}{% endblock %}
+
+{% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
+
+{% block admin_change_form_document_ready %}
+    <script type="text/javascript">
+        (function($) {
+            $(document).ready(function() {
+                $('.add-another').click(function(e) {
+                    e.preventDefault();
+                    showAddAnotherPopup(this);
+                });
+                $('.related-lookup').click(function(e) {
+                    e.preventDefault();
+                    showRelatedObjectLookupPopup(this);
+                });
+
+                //create qrcode for preview
+                var qrcodeElem = document.getElementById('qrcode');
+                if (qrcodeElem) {
+                    var qrcode = new QRCode(qrcodeElem);
+                    qrcode.makeCode($('#wechatPreview').attr('href'), {correctLevel: QRCode.CorrectLevel.L});
+                    $("#wechatPreview").tooltip({
+                        "content": function () {
+                            return "<div>" + $("#qrcode").html() + "<br>微信扫码在手机上预览</div>"
+                        },
+                        show: {
+                            effect: "slideDown"
+                        }
+                    });
+                }
+                {% if original.is_multispec %}
+                    $(".field-spec_tag_desc").last().after($("#m_fieldset"));
+                    var specGroup = "{{ original.spec_group }}" || "{{ original.pk }}";
+                    $.post('/tms-api/admin/query_multispec', {'group': specGroup}, function (data) {
+                        if (data && $.isArray(data)) {
+                            $.each(data, function (k, v) {
+                                if (v.code != specGroup) {
+                                    var p = $("#m_fieldset table tr").eq(1);
+                                    p.after("<tr>" + p.html() + "</tr>");
+                                    var n_children = p.next().children('td');
+                                    $.each(p.children('td').children('input'), function (k, item) {
+                                        var name = $(item).attr('name');
+                                        var value = v[name.substr(2)];
+                                        if (typeof(value) == 'undefined' || value == null){
+                                            value = '';
+                                        }
+                                        if (name != 'm_code') {
+                                            n_children.children('input[name="' + name + '"]').val(value);
+                                        } else {
+                                            var el = n_children.children('input[name="' + name + '"]');
+                                            el.val(value);
+                                            var path = location.pathname.split('/');
+                                            if (path.pop() == ''){
+                                                path.pop();
+                                            }
+                                            path.push(value);
+                                            var prd_path = path.join('/');
+                                            var prd_link = '<a href="'+ prd_path +'">' + value +'</a>';
+                                            el.next('span').html(prd_link);
+                                        }
+                                    });
+                                }
+                            });
+                        }else{
+                            $.scojs_message('获取多规格数据失败！', $.scojs_message.TYPE_ERROR);
+                            //$.Zebra_Dialog('获取多规格数据失败！');
+                        }
+                    });
+                    $("#m_fieldset table").on('click', '.m_add_btn', function () {
+                        var p = $(this).parent().parent();
+                        p.after("<tr>" + p.html() + "</tr>");
+                        var n_children = p.next().children('td');
+                        $.each(p.children('td').children('input'), function (k, item) {
+                            var name = $(item).attr('name');
+                            if(name != 'm_code') {
+                                n_children.children('input[name="' + name +'"]').val($(item).val());
+                            }else{
+                                var el = n_children.children('input[name="' + name +'"]');
+                                el.val('');
+                                el.next('span').text('-');
+                            }
+                        });
+                    });
+                    $("#m_fieldset table").on('click', '.m_delete_btn', function () {
+                        var me = $(this);
+                        $.Zebra_Dialog('确认要删除该规格商品信息吗？', {
+                            'type': 'question',
+                            'buttons': [
+                                {
+                                    caption: '确定',
+                                    callback: function () {
+                                        var curRow = me.parent().parent();
+                                        var code = curRow.children('td').children('input[name="m_code"]').val();
+                                        if (code) {
+                                            $.post('/tms-api/admin/remove_product', {'code': code}, function (data) {
+                                                if (data && data['result'] == 'ok') {
+                                                    curRow.remove();
+                                                }else{
+                                                    //$.Zebra_Dialog(data && data['error'] || '未知错误！');
+                                                    $.scojs_message(data && data['error'] || '未知错误！', $.scojs_message.TYPE_ERROR);
+                                                }
+                                            });
+                                        }else {
+                                            curRow.remove();
+                                        }
+                                    }
+                                },
+                                {
+                                    caption: '取消',
+                                    callback: function () {
+                                        $.scojs_message('操作已取消', $.scojs_message.TYPE_OK);
+                                        //$.Zebra_Dialog('操作已取消');
+                                    }
+                                }
+                            ]
+                        });
+
+                    });
+                    var REQUIRED_FIELD_NAMES = {
+                        'm_name': '商品名称',
+                        'm_spec_tag1': '规格标签1',
+                        'm_cost': '供货价',
+                        'm_settle_price': '渠道结算价',
+                        'm_market_price': '市场价',
+                        'm_retail_price': '零售价'
+                    };
+                    function validate(){
+                        var err = ['商品多规格设置不符合要求：'];
+                        var errElems = [];
+                        $.each($("#m_fieldset input"), function(k, item){
+                            $(item).removeClass('error');  //clear all error
+                            var msg = '';
+                            var name = $(item).attr('name');
+                            var value = $(item).val();
+                            if (REQUIRED_FIELD_NAMES[name] && (!value || !value.trim())){
+                                //if (django.jQuery("#id_is_multispec").is(":checked") &&
+                                //        !(name == 'm_spec_tag1' && $('#m_fieldset input[name="m_spec_tag1"]').length == 1)) {
+                                    msg = "- " + REQUIRED_FIELD_NAMES[name] + '必填';
+                                //}
+                            }
+                            if (msg){
+                                err.push(msg);
+                                errElems.push($(item));
+                            }
+                        });
+                        var tagNames = ['m_spec_tag1', 'm_spec_tag2', 'm_spec_tag3'];
+                        var firstRow = '';
+                        var rowTextArr = [];
+                        $.each($("#m_fieldset tr:gt(0)"), function(k, item){
+                            var row = '';
+                            var rowTxt = '';
+                            for(var i=0;i<tagNames.length;i++){
+                                var element = $(item).children('td').children('input[name="' + tagNames[i] + '"]');
+                                row += element.val() ? '+' : '-';
+                                rowTxt += "|" + element.val();
+                            }
+                            firstRow = firstRow == '' ? row : firstRow;
+                            var curElem = $(item).children('td:eq(0)').children('input[placeholder="填写规格标签"]');
+                            if (firstRow != row) {
+                                err.push('不同规格商品的规格标签数量要一致！');
+                                errElems.push(curElem);
+                            }else{
+                                if(rowTextArr.indexOf(rowTxt) != -1){
+                                    err.push('不同规格商品的规格标签不能完全相同！');
+                                    errElems.push(curElem);
+                                }
+                            }
+                            rowTextArr.push(rowTxt);
+                            var td = $(this).children('td:eq(3)');
+                            var cost = parseFloat(td.children("input[name=m_cost]").val());
+                            var settle_price = parseFloat(td.children("input[name=m_settle_price]").val());
+                            var retail_price = parseFloat(td.children("input[name=m_retail_price]").val());
+                            var market_price = parseFloat(td.children("input[name=m_market_price]").val());
+                            if (cost > settle_price){
+                                err.push("结算价不得低于供货价");
+                                errElems.push(td.children("input[name=m_settle_price]"));
+                            }
+                            if (settle_price > retail_price){
+                                err.push("零售价不得低于结算价");
+                                errElems.push(td.children("input[name=m_retail_price]"));
+                            }
+                            if (market_price < retail_price ){
+                                err.push("零售价不得高于市场价");
+                                errElems.push(td.children("input[name=m_retail_price]"));
+                            }
+                        });
+
+                        if (err.length > 1){
+                            for(var i=0; i< errElems.length; i++){
+                                errElems[i].addClass('error');
+                            }
+                            //alert(err.join("\n"));
+                            $.scojs_message(err.join("\n<br>"), $.scojs_message.TYPE_ERROR);
+                            //$.Zebra_Dialog(err.join("\n<br>"), {
+                            //    'type':     'error',
+                            //    'title':    'Error'
+                            //});
+                            return false;
+                        }else{
+                            return true;
+                        }
+                    }
+                    $("form").on('submit', function(){
+                        return validate();
+                    });
+                {% endif %}
+            {% if adminform and add %}
+                $('form#{{ opts.model_name }}_form :input:visible:enabled:first').focus();
+            {% endif %}
+            });
+
+            //$("#setSpecBtn").click(function(){
+            //    $(this).next().toggle();
+            //});
+        })(django.jQuery);
+    </script>
+    <script>var $ = jQuery = jQuery || django.jQuery;</script>
+    <script type="text/javascript" src="{% static 'js/zebra_dialog.js' %}"></script>
+    <script type="text/javascript" src="{% static 'jquery-ui/jquery-ui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'sco/js/sco.message.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/qrcode.min.js' %}"></script>
+{% endblock %}
+
+{# JavaScript for prepopulated fields #}
+{% prepopulated_fields_js %}
+
+</div>
+</form></div>
+{% endblock %}

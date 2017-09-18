@@ -1,0 +1,82 @@
+#pTemplate, .printPane {
+    /*width:800pt;*/
+    /*height:600pt;*/
+    /*background:url(../images/tmpl/sf.jpg) no-repeat;*/
+    /*font-size:14px;*/
+    /*page-break-after:auto;*/
+    border: dotted 1px #f00;
+    position: relative;
+    margin-bottom: 10px;
+}
+.button{padding: 0.1em; margin:0.2em; max-width:100%;font-size: 0.8em;}
+.button-block{width:100%;display:block;}
+.actBtn{}
+.fieldHolder {padding: 0.1em; border:solid 2px #0f0;position: absolute;}
+.fieldHolder img {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    z-index: 999;
+}
+.highlight {border:solid 2px #f00;}
+.highlight img {display:inline;}
+.settingToolbar{
+    position: absolute;
+    top:90px;
+    right: 10px;
+    padding:0.2em;
+    margin:0.2em;
+    float:right;
+    width:250px;
+    height: 80%;
+}
+.settingPanel > label, .settingPanel > select, .settingPanel > input{
+    display: block;margin: 3px; width:100%;
+}
+#tplSetting{display:block; border:solid 1px #ddf; padding:5px; margin:5px;}
+#tplSetting div{margin-bottom:5px;}
+.hidden{display: none !important;}
+.ui-resizable-helper { border: 2px dotted #00F; }
+.txt-block{display:block;margin:2px;}
+table{border-collapse: collapse;}
+.order-table{border:0px;width:90%;margin-left:5%;}
+.order-table td{border:solid 1px #000;vertical-align: middle;}
+thead td{text-align: center;font-weight: bold;}
+tbody td{text-align: right;}
+.print-header{
+    width: 90%;
+    padding: 0px 5%;
+    margin-top: 5px;
+}
+.print-footer{
+  width: 90%;
+  alignment: right;
+  margin: 5px 5%;
+}
+.note-pane{
+    width: 90%;
+    margin: 5px 5%;
+    border: dotted 1px #1c94c4;
+}
+.note-pane>*{
+    margin-left: 5px;
+}
+.print-note{
+    margin: 2px 20px;
+    padding: 5px;
+    font-style: italic;
+}
+.error-pane{
+    margin: 5px 20px;
+    padding: 5px;
+    border: dotted 1px #f00;
+}
+.txt-left{
+    text-align: left;
+}
+.txt-right{
+    text-align: right;
+}
+.txt-center{
+    text-align: center;
+}

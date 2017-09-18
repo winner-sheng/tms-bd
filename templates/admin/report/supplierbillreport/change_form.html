@@ -1,0 +1,205 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_modify %}
+
+{% block extrahead %}{{ block.super }}
+<script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+{{ media }}
+{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+{#    <link rel="stylesheet" type="text/css" href="{% static "jquery-ui/jquery-ui.min.css" %}" />#}
+    <style type="text/css">
+        #summaryPane{
+            display: table;
+            width: 400px;;
+            border: 1px solid #eee;
+        }
+        #dataPane{
+            display: table;
+            width: 100%;
+            border: 1px solid #eee;
+        }
+        .bold{
+            font-weight: bold;
+        }
+        .larger{
+            font-size: 1.2em;
+        }
+        .row{
+            display: table-row;
+        }
+        .cell{
+            display: table-cell;
+            border: 1px solid #eee;
+            text-align: right;
+            padding: 2px 5px;
+            font-size: 11px;
+            border-left: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            max-width: 300px;
+        }
+        .grey{
+            background-color: #eeeeee;
+        }
+        .header{
+            display: table-cell;
+            vertical-align: middle;
+            border: 1px solid #eee;
+            text-align: center;
+            padding: 2px 5px;
+            font-size: 12px;
+            background: #e1e1e1 url({% static 'admin/img/nav-bg.gif' %}) top left repeat-x;
+            border-left: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+        }
+        .note{
+            border: 1px dashed #ddd;
+            padding: 10px;
+        }
+        .footer{
+            width: 100%;
+            padding: 5px 10px;
+        }
+        .footer div{
+            display: inline-block;
+            padding: 5px 10px;
+        }
+        .highlight{
+            font-weight: bold;
+            color: #0000ff;
+        }
+        .clear{
+            clear: both;
+        }
+    </style>
+{% endblock %}
+{% block content_title %}
+    <h1>{{ original.title }}</h1>
+{% endblock %}
+{% block content %}
+    <p>
+        * 报告周期：{{ original.start_time | date:'Y年m月d日' }} - {{ original.end_time | date:'Y年m月d日' }}（不包含）<br>
+        * 说明：账单总额 = 货款总额 + 邮费总额 - 邮费优惠总额 - 账单扣除总额
+    </p>
+    <div id="summaryPane">
+        {% ifequal original.version 1 %}
+        <div class="row"><div class="cell bold larger">账单总额（￥）：</div><div class="cell bold larger">{{  report.bill_total }}</div> </div>
+        <div class="row row1"><div class="cell">应收货款（￥）：</div><div class="cell">{{ report.summary.13| default:0 }}</div> </div>
+        <div class="row row2"><div class="cell">应收邮费（￥）：</div><div class="cell">{{  report.shipfee_total }}</div> </div>
+        <div class="row row1"><div class="cell">维权退款（￥）：</div><div class="cell">
+            -{{  report.summary.14 | default:0 }}
+        </div></div>
+        <div class="row row2"><div class="cell">订单成交(笔)：</div><div class="cell">{{ report.data|length }}</div> </div>
+        <div class="row row1"><div class="cell">销售商品(件)：</div><div class="cell">{{ report.summary.10 | default:0}}</div> </div>
+        <div class="row row2"><div class="cell">发送包裹(个)：</div><div class="cell">{{ report.summary.11 | default:0}}</div> </div>
+        <div class="row row1"><div class="cell">出单时间：</div><div class="cell">{{ original.create_time }}</div> </div>
+        {% else %}
+            {% for row in report.summary %}
+        <div class="row {% cycle 'row1' 'row2' %}">
+            {% if forloop.first %}
+            <div class="cell bold larger">{{ row.0 }}：</div>
+            <div class="cell bold larger">{{  row.1| default:0 }}</div>
+            {% else %}
+            <div class="cell">{{ row.0 }}：</div>
+            <div class="cell">{{  row.1| default:0 }}</div>
+            {% endif %}
+        </div>
+            {% endfor %}
+{#        <div class="row row1"><div class="cell">应收货款（￥）：</div><div class="cell">{{ summary.8| default:0 }}</div> </div>#}
+{#        <div class="row row2"><div class="cell">应收邮费（￥）：</div><div class="cell">{{  report.shipfee_total }}</div> </div>#}
+{#        <div class="row row1"><div class="cell">维权退款（￥）：</div><div class="cell">-#}
+{#            {{  report.summary.1.10 | default:0 }}#}
+{#        </div> </div>#}
+{#        <div class="row row2"><div class="cell">订单成交(笔)：</div><div class="cell">{{ report.data|length }}</div> </div>#}
+{#        <div class="row row1"><div class="cell">销售商品(件)：</div><div class="cell">{{ report.summary.10 | default:0}}</div> </div>#}
+{#        <div class="row row2"><div class="cell">发送包裹(个)：</div><div class="cell">{{ report.summary.11 | default:0}}</div> </div>#}
+        <div class="row grey"><div class="cell">出单时间：</div><div class="cell">{{ original.create_time }}</div> </div>
+        {% endifequal %}
+    </div>
+    <div class="footer">
+        {% if original.is_confirmed %}
+            <h3 class="highlight">{% if report.is_owner %}您{% else %}商家{% endif %}已确认该账单！</h3>
+        {% elif report.is_owner %}
+            <input id="memoTxt" type="text" placeholder="添加账单审核意见" value="我已审阅该账单">
+            <button id="confirmBtn" class="highlight">确认无误</button>
+            <link rel="stylesheet" type="text/css" href="{% static "css/dialog/flat/zebra_dialog.css" %}" />
+            <link rel="stylesheet" type="text/css" href="{% static "sco/css/scojs.css" %}" />
+            <link rel="stylesheet" type="text/css" href="{% static "sco/css/sco.message.css" %}" />
+            <script type="text/javascript">
+                var $ = jQuery = jQuery || django.jQuery;
+                (function($){
+                    $(document).ready(function () {
+                        $("#confirmBtn").click(function(){
+                            $.Zebra_Dialog('账单确认后将不可再更改，继续吗？', {
+                                'type': 'question',
+                                'buttons': [
+                                    {
+                                        caption: '是',
+                                        callback: function () {
+                                            $.post(
+                                                "{% url 'report-views-feedback' %}",
+                                                {
+                                                    "is_confirmed": 1,
+                                                    "id": {{ original.id }},
+                                                    "memo": $("#memoTxt").val()
+                                                },
+                                                function(data){
+                                                    if(data && data['result'] == 'ok'){
+                                                        $(".footer").html('账单确认成功！');
+                                                    }else if (data && data['error']){
+                                                        $.scojs_message(data['error'], $.scojs_message.TYPE_ERROR);
+                                                    }else{
+                                                        $.scojs_message('未知异常！', $.scojs_message.TYPE_ERROR);
+                                                    }
+                                                }
+                                            );
+                                        }
+                                    },
+                                    {
+                                        caption: '否',
+                                        callback: function () {
+                                            $.scojs_message('操作已取消', $.scojs_message.TYPE_OK);
+                                        }
+                                    }
+                                ]
+                            });
+                        });
+                    });
+                })(django.jQuery);
+            </script>
+            <script type="text/javascript" src="{% static 'js/zebra_dialog.js' %}"></script>
+            <script type="text/javascript" src="{% static 'sco/js/sco.message.js' %}"></script>
+        {% endif %}
+    </div>
+    <h3>销售明细：</h3>
+    <div id="dataPane">
+        <div class="row">
+            <div class="header">No.</div>
+        {% for head in report.header %}
+            <div class="header">{{ head }}</div>
+        {% endfor %}
+        </div>
+        {% for row in report.data %}
+            <div class="row {% cycle "row1" "row2" %}">
+                <div class="cell">{{ forloop.counter }}</div>
+                {% for cell in row %}
+                <div class="cell">{{ cell|default:"" }}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+{#        {% if report.summary %}#}
+{#            <div class="row">#}
+{#                <div class="header">汇总</div>#}
+{#            {% for cell in report.summary %}#}
+{#                <div class="header">{{ cell|default:'-' }}</div>#}
+{#            {% endfor %}#}
+{#            </div>#}
+{#        {% endif %}#}
+        {% if origin.memo %}
+        <div class="note">origin.memo</div>
+        {% endif %}
+    </div>
+    <div><br>---------- 能看到我，说明您已经看完这份完整的账单了 :) ----------</div>
+{% endblock %}

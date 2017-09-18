@@ -1,0 +1,43 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls admin_static admin_modify %}
+{% block object-tools-items %}
+<li>
+    {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
+    <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
+</li>
+{% if has_absolute_url %}
+<li>
+    <div style="display: none;" id="qrcode"></div>
+    <a id="wechatPreview" target="_blank" title="微信扫码预览或点击在电脑上查看" href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a>
+</li>
+{% endif %}
+{% endblock %}
+{% block admin_change_form_document_ready %}
+    {{ block.super }}
+    <script type="text/javascript">
+        (function($) {
+            $(document).ready(function() {
+                //create qrcode for preview
+                var qrcodeElem = document.getElementById('qrcode');
+                if (qrcodeElem) {
+                    var qrcode = new QRCode(qrcodeElem);
+                    qrcode.makeCode($('#wechatPreview').attr('href'), {correctLevel: QRCode.CorrectLevel.L});
+                    $("#wechatPreview").tooltip({
+                        "content": function () {
+                            return "<div>" + $("#qrcode").html() + "<br>微信扫码在手机上预览</div>"
+                        },
+                        show: {
+                            effect: "slideDown"
+                        }
+                    });
+                }
+            });
+        })(django.jQuery);
+    </script>
+    <script>var $ = jQuery = jQuery || django.jQuery;</script>
+{#    <script type="text/javascript" src="{% static 'js/zebra_dialog.js' %}"></script>#}
+    <link rel="stylesheet" type="text/css" href="{% static "jquery-ui/jquery-ui.min.css" %}" />
+    <script type="text/javascript" src="{% static 'jquery-ui/jquery-ui.min.js' %}"></script>
+{#    <script type="text/javascript" src="{% static 'sco/js/sco.message.js' %}"></script>#}
+    <script type="text/javascript" src="{% static 'js/qrcode.min.js' %}"></script>
+{% endblock %}

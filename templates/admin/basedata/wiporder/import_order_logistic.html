@@ -1,0 +1,71 @@
+{#{% extends "admin/base_site.html" %}#}
+    {% block extrastyle %}
+    <link rel="stylesheet" type="text/css" href="/static/css/icon.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/template.css"/>
+	<script type="text/javascript" src="/static/js/jquery.js"></script>
+    <style type="text/css">
+        button{margin-left: 10px;}
+    </style>
+    <script type="text/javascript">
+    $(document).ready(function(){
+        //$('.importBtn').click(function(){
+        //    $('#excelSrc').val($(this).attr('name'));
+        //    $("form").submit();
+        //    $("button[type=submit]").attr("disabled", "disabled");
+        //});
+    });
+    </script>
+    {% endblock %}
+
+{% block content %}
+    <button onclick="window.close()" style="position: fixed;top: 20px;right:30px">关闭</button>
+    {% if auth_error %}
+        <div style="color:#ff0000">{{ error }}</div>
+    {% else %}
+        <div style="border:dotted 1px blue;margin:10px;padding:10px;">
+            导入须知：
+            <ul>
+                <li>数据源请使用csv格式文档(确保前三列按顺序为业务单号，物流公司，运单号)</li>
+                <li>请确保物流公司名称与系统登记的一致</li>
+            </ul>
+        </div>
+        <form action="/tms-api/admin/import_order_logistic" method="post" enctype="multipart/form-data">
+{#            {% csrf_token %}#}
+            <label for="files">请选择要上传的数据文件（csv格式）</label>
+            <input name="files" type="file" style="border:1px solid #e6e6e6">
+            <button type="submit" class="importBtn">
+                导入
+            </button>
+        </form>
+        {% if count %}
+            <div style="color: #0000ff;">共更新 {{ count }} 笔订单</div>
+        {% endif %}
+        {% if success %}
+            <div style="color: #0000ff;">
+                <ul>
+                    {% for succ in success %}
+                    <li>{{ succ }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% if error %}
+            <div style="color: #ff0000;">
+                <ul>
+                    {% for err in error %}
+                    <li>{{ err }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% if warning %}
+            <div style="color: #ff0000;">
+                <ul>
+                    {% for w in warning %}
+                    <li>{{ w }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}

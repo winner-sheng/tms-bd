@@ -1,0 +1,467 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list %}
+{% block title %} 交易管理系统 {% endblock %}
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">交易管理系统</a></h1>
+{% endblock %}
+{% if not is_popup %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; 统计报表管理
+</div>
+{% endblock %}
+{% endif %}
+{% block extrahead %}
+    {{ media.css }}
+    <link rel="stylesheet" type="text/css" href="{% static "css/dialog/flat/zebra_dialog.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "jquery-ui/jquery-ui.min.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "css/font-awesome.min.css" %}" />
+    <!--[if IE 7]>
+    <link rel="stylesheet" href="{% static "css/font-awesome-ie7.min.css" %}">
+    <![endif]-->
+    <style type="text/css">
+        button {
+            margin-left: 10px;
+        }
+        .buttonBar{
+            border-bottom:1px solid #ddd;
+            padding:5px 20px;
+        }
+        .sub-buttonbar{
+            padding-bottom: 5px;
+        }
+        .align-middle{
+            vertical-align: middle;
+        }
+        #reports {
+            width: 220px;
+        }
+        #dataPane{
+            display: table;
+            border: 1px solid #eee;
+        }
+        .row{
+            display: table-row;
+        }
+        .cell{
+            display: table-cell;
+            border: 1px solid #eee;
+            padding: 3px 2px;
+            text-align: right;
+        }
+        #dataPane .header{
+            font-weight: bold;
+            font-size: 1.2em;
+            background: #ddddff;
+        }
+        #dataPane .summary{
+            font-weight: bold;
+            font-size: 1.2em;
+            background: #ddddff;
+            text-align: center;
+        }
+        div.header div.cell:not(:first-child) {
+            text-align: center;
+            cursor: pointer;;
+        }
+        #dataPane .row:nth-of-type(even){
+            background: #eeeeff;
+        }
+        .note{
+            color: blue;
+        }
+        div#progressBox {
+            display: none;
+            position: fixed;
+            background-color: #f0fff0 !important;
+            border: 1px solid #3F7A2A;
+            border-radius: 5px;
+            z-index: 20;
+            opacity: 0.9;
+            box-shadow: 3px 3px 10px #3F7A2A;
+            padding: 0px;
+            font-size: 0.15rem;
+            line-height: 0.34rem;
+            text-align: center;
+            color: #ef8100;
+            width: 300px;
+            height: 240px;
+            left: 50%;
+            top: 50%;
+            margin-left: -150px;
+            margin-top: -120px;
+        }
+        div#progressBox img {
+            width: 80%;
+            margin: 17px;
+        }
+        #loadingPane {
+            background-color: #000;
+            position: absolute;
+            top: 50%;
+            left:50%;
+            height: 120px;
+            margin-top: -60px;
+            margin-left: -30%;
+            overflow: hidden;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+            text-align: center;
+            width: 60%;
+            border: solid 1px #5a5a5a;
+            padding: 10px;
+            border-radius: 10px;
+            color: #fff;
+            opacity: 0.6;
+            -webkit-justify-content: center;
+            -moz-justify-content: center;
+            justify-content: center;
+            -webkit-align-items: center;
+            -moz-align-items: center;
+            align-items: center;
+            z-index: 99;
+        }
+        .loader {
+            margin: 5px;
+            width: 60px;
+            height: 60px;
+            left: 50%;
+            margin-left: -35px;
+            border-radius: 50%;
+            background: #ffffff;
+            background: -moz-linear-gradient(left, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
+            background: -webkit-linear-gradient(left, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
+            background: -o-linear-gradient(left, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
+            background: -ms-linear-gradient(left, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
+            background: linear-gradient(to right, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
+            position: relative;
+            -webkit-animation: loading 1.4s infinite linear;
+            animation: loading 1.4s infinite linear;
+            -webkit-transform: translateZ(0);
+            -moz-transform: translateZ(0);
+            -ms-transform: translateZ(0);
+            -o-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+        .loader:before {
+            width: 50%;
+            height: 50%;
+            background: #5a5a5a;
+            border-radius: 100% 0 0 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            content: '';
+        }
+        .loader:after {
+            background: #111;
+            width: 75%;
+            height: 75%;
+            border-radius: 50%;
+            content: '';
+            margin: auto;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+        }
+        .loader:before, .loader:after {
+            content: '';
+            position: absolute;
+            top: 0;
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+        }
+        @-webkit-keyframes loading {
+            0% {
+                -webkit-transform: rotate(0deg);
+                transform: rotate(0deg);
+            }
+            100% {
+                -webkit-transform: rotate(360deg);
+                transform: rotate(360deg);
+            }
+        }
+        @keyframes loading {
+            0% {
+                -webkit-transform: rotate(0deg);
+                transform: rotate(0deg);
+            }
+            100% {
+                -webkit-transform: rotate(360deg);
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    <script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script type="text/javascript" src="{% static 'jquery-ui/jquery-ui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'jquery-ui/datepicker-zh-cn.js' %}"></script>
+    <script type="text/javascript" src="http://apps.bdimg.com/libs/underscore.js/1.7.0/underscore-min.js"></script>
+    <script type="text/javascript" src="{% static 'js/zebra_dialog.js' %}"></script>
+{#    <script src="http://echarts.baidu.com/build/dist/echarts.js"></script>#}
+    <script type="text/javascript">
+        {#        // 路径配置#}
+        {#        require.config({#}
+        {#            paths: {#}
+        {#                echarts: 'http://echarts.baidu.com/build/dist'#}
+        {#            }#}
+        {#        });#}
+        {#        // 使用#}
+        {#        require(#}
+        {#                [#}
+        {#                    'echarts',#}
+        {#                    'echarts/chart/bar' // 使用柱状图就加载bar模块，按需加载#}
+        {#                ],#}
+        {#                function (ec) {#}
+        {#                    // 基于准备好的dom，初始化echarts图表#}
+        {#                    var myChart = ec.init(document.getElementById('main'));#}
+        {#                    var option = {#}
+        {#                        tooltip: {#}
+        {#                            show: true#}
+        {#                        },#}
+        {#                        legend: {#}
+        {#                            data: ['销量']#}
+        {#                        },#}
+        {#                        xAxis: [#}
+        {#                            {#}
+        {#                                type: 'category',#}
+        {#                                data: ["衬衫", "羊毛衫", "雪纺衫", "裤子", "高跟鞋", "袜子"]#}
+        {#                            }#}
+        {#                        ],#}
+        {#                        yAxis: [#}
+        {#                            {#}
+        {#                                type: 'value'#}
+        {#                            }#}
+        {#                        ],#}
+        {#                        series: [#}
+        {#                            {#}
+        {#                                "name": "销量",#}
+        {#                                "type": "bar",#}
+        {#                                "data": [5, 20, 40, 10, 10, 20]#}
+        {#                            }#}
+        {#                        ]#}
+        {#                    };#}
+        {##}
+        {#                    // 为echarts对象加载数据#}
+        {#                    myChart.setOption(option);#}
+        {#                }#}
+        {#        );#}
+        $(document).ready(function () {
+            {#            $("#reports").on("change", function () { //selectmenu().#}
+            {#                var v = $(this).val();#}
+            {#                if (v) {#}
+            {#                    $.get('/report', {'type': v}, function (data) {#}
+            {#                        alert(JSON.stringify(data));#}
+            {#                    });#}
+            {#                }#}
+            {#            });#}
+            function toggleTip(show){
+                if (show && !$("#loadingPane").length){
+                    //$(document.body).append('<div id="progressBox"><img src="{% static "images/loading.gif" %}"></div>');
+                    $(document.body).append('<div id="loadingPane"><div><div class="loader"></div>玩命加载中，请稍候...    </div></div>');
+                }
+                $("#loadingPane").toggle(show);
+            }
+            function loadData(action){
+                var v = $("#reports").val();
+                if (v) {
+                    var from = $("#fromDate").val();
+                    var to = $("#toDate").val();
+                    if (action == 'export'){
+                        location.href = '/tms-api/admin/report?type=' + v + '&from=' + from + '&to=' + to + '&action=export';
+                    }else {
+                        var params = {
+                            'type': v,
+                            'from': from,
+                            'to': to,
+                            'action': action
+                        };
+                        if ($("#orderBy").val()){
+                            params['orderBy'] = $("#orderBy").val();
+                        }
+                        if ($("#isAsc").val() == '1'){
+                            params['isAsc'] = 1;
+                        }
+                        toggleTip(true);
+                        $.ajax({
+                            type: 'GET',
+                            url: '/tms-api/admin/report',
+                            data: params,
+                            beforeSend: function () {
+                                toggleTip(true);
+                            },
+                            success: function (api_res, status) {
+                                if (api_res && _.isArray(api_res['data'])) {
+                                    $("#dataPane").empty();
+                                    $("#headerPane").text($("#reports option:selected").text());
+                                    var data = api_res['data'];
+                                    var len = api_res['header'].length;
+                                    //设置行模板
+                                    var htmlStr = ['<div class="row"><div class="cell cellx"><%= idx %></div>'];
+                                    for (var i = 0; i < len; i++) {
+                                        htmlStr.push('<div class="cell cell'+ i +'"><%= row[' + i + '] %></div>');
+                                    }
+                                    htmlStr.push('</div>');
+                                    var template = _.template(htmlStr.join(''));
+
+                                    var header = template({'row': api_res['header'], 'idx': 'No.'});
+                                    $("#dataPane").append(header);
+                                    //填充模板
+                                    for (var i = 0; i < data.length; i++) {
+                                        $("#dataPane").append(template({'row': data[i], 'idx': i+1}));
+                                    }
+                                    //汇总数据
+                                    if(api_res['summary'] && api_res['summary'].length > 0){
+                                        $("#dataPane").append(template({'row': api_res['summary'], 'idx': "汇总"}));
+                                        $("#dataPane .row").last().addClass('summary');
+                                    }
+                                    if (data.length > 20){
+                                        $("#dataPane").append(header);
+                                        $("#dataPane .row").last().addClass('header');
+                                    }
+                                    $("#dataPane .row").first().addClass('header');
+                                    $("#dataPane .header").attr("title", "点击列名排序");
+                                    $("#isAsc").val(api_res['isAsc'] || '');
+                                    if(api_res['orderBy']){
+                                        $("#orderBy").val(api_res['orderBy']);
+                                        var c_name = api_res['isAsc'] ? "icon-arrow-up" : "icon-arrow-down";
+                                        $(".header .cell").eq(api_res['orderBy']).addClass(c_name);
+                                    }
+                                    //支持按列排序
+                                    $(".header .cell").on('click', function(e){
+                                        var c_idx = $(this).index();
+                                        if(c_idx > 0) {
+                                            if ($("#orderBy").val() == c_idx){
+                                                if ($("#isAsc").val()){
+                                                    $("#isAsc").val(0);
+                                                }else{
+                                                    $("#isAsc").val(1);
+                                                }
+                                            }
+                                            $("#orderBy").val(c_idx);
+                                            loadData('view');
+                                        }
+                                    });
+                                } else {
+                                    if(api_res && api_res['error']){
+                                        $.Zebra_Dialog(api_res['error']);
+                                    } else if (api_res && typeof api_res == 'string' && api_res.indexOf('登录') != -1) {
+                                            $.Zebra_Dialog('当前会话已失效，请重新登录！');
+                                    }else {
+                                        $.Zebra_Dialog('没有数据或者获取数据失败，请稍后再试！');
+                                    }
+                                }
+                            },
+                            complete: function () {
+                                toggleTip(false);
+                            }
+                        });
+                    }
+                }else{
+                    $.Zebra_Dialog('请先选择报表');
+                    return false;
+                }
+            }
+            $("#viewBtn").click(function (e) {
+                loadData('view');
+            });
+            $("#exportBtn").click(function (e) {
+                loadData('export');
+            });
+            $("#reports").selectmenu().on("selectmenuchange", function(e){
+                $("#orderBy").val('');
+            }).selectmenu('widget').addClass("align-middle");
+            $("button").button();
+            $("input.date").datepicker();
+            $("input.date").datepicker("option", "dateFormat", 'yy-mm-dd');
+            var today = new Date();
+            {# today.setFullYear(2017,1,1); #}
+            if (today.getMonth() != 12) {
+                if (today.getDate() < 15) {
+                    $("input.date:eq(0)").datepicker("setDate", [today.getFullYear(), today.getMonth(), 1].join('-'));
+                } else {
+                    $("input.date:eq(0)").datepicker("setDate", [today.getFullYear(), today.getMonth() + 1, 15].join('-'));
+                }
+                {#            $("input.date").datepicker("option", "dateFormat", 'yy/mm/dd');#}
+            } else {
+                if (today.getDate() < 15) {
+                    $("input.date:eq(0)").datepicker("setDate", [today.getFullYear(), today.getMonth(), 1].join('-'));
+                } else {
+                    $("input.date:eq(0)").datepicker("setDate", [today.getFullYear() + 1, 1, 15].join('-'));
+                }
+            }
+        });
+    </script>
+{% endblock %}
+{% block content %}
+    <div class="buttonBar">
+    <div class="sub-buttonbar">
+        <select name="type" id="reports">
+            <option value="">--- 请选择报告类型 ---</option>
+            {% for key, report in reports %}
+                {{ key }} {{ report }}
+            {% if report %}
+                <option value="{{ key }}">&nbsp;&nbsp;{{ report }}</option>
+            {% else %}
+                {% if forloop.counter0 %}
+                    </optgroup>
+                {% endif %}
+                <optgroup label="{{ key }}">
+            {% endif %}
+            {% endfor %}
+            </optgroup>
+        </select>
+        日期<label for="from">从</label>
+        <input id="fromDate" name="fromDate" class="date" style="width:10em;" title="对于订单及商品而言是付款时间，对于用户而言是注册时间，对于收益而言是创建时间">
+        <label for="to">到</label>
+        <input id="toDate" name="toDate" class="date" style="width:10em;" title="对于订单及商品而言是付款时间，对于用户而言是注册时间，对于收益而言是创建时间">
+        <input id="action" type="hidden" name="action" value="view">
+    </div>
+    <!--
+    <select name="type" id="reports">
+        <option value="">请选择报告类型</option>
+        <optgroup label="订单">
+{#            <option value="past_7days_order">最近7天销售情况</option>#}
+{#            <option value="last_month_order">上月订单销售情况</option>#}
+            <option value="order_monthly_summary">每月订单销售统计</option>
+            <option value="order_daily_summary">每日订单销售统计</option>
+            <option value="order_hourly_summary">每日订单销售统计-分时统计</option>
+            <option value="order_income_report_per_pay">订单收入/退款统计-按付款时间</option>
+            <option value="order_income_report_per_signoff">订单收入/退款统计-按签收时间</option>
+            <option value="order_summary_per_state">订单汇总统计-按订单状态</option>
+            <option value="order_summary_per_ship_province">订单汇总统计-按收件省份</option>
+        </optgroup>
+        <optgroup label="商品">
+            <option value="product_sales_report">商品销售统计</option>
+            <option value="supplier_sales_report">商品销售统计-按供应商</option>
+        </optgroup>
+        <optgroup label="用户">
+            <option value="user_daily_summary">每日注册数统计</option>
+            <option value="account_book_report">用户资金账户汇总</option>
+            <option value="user_reward_report">用户收益统计</option>
+            <option value="user_refer_report">用户推广统计</option>
+            <option value="user_cascade_reward_report">用户伙伴奖励统计</option>
+        </optgroup>
+        <optgroup label="财务">
+            <option value="finance_margin_detail">销售利润表</option>
+            <option value="finance_sale_report">销售订单</option>
+            <option value="finance_purchase_report">采购订单</option>
+            <option value="finance_supplier_detail">供应商档案</option>
+        </optgroup>
+    </select>-->
+    <div>
+        <button id="viewBtn">查看数据</button>
+        <button id="exportBtn">导出</button>
+        <input type="hidden" id="orderBy" value="">
+        <input type="hidden" id="isAsc" value="">
+    </div>
+    </div>
+    <h3 id="headerPane"></h3>
+    <div id="dataPane"></div>
+    <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+    <div id="main" style="height:400px"></div>
+    <!-- ECharts单文件引入 -->
+{% endblock %}

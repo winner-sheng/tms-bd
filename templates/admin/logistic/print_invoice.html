@@ -1,0 +1,128 @@
+{% load i18n admin_urls admin_static admin_list %}
+{#{% extends "admin/base_site.html" %}#}
+    {% block extrastyle %}
+    <link rel="stylesheet" type="text/css" href={% static "css/icon.css" %} />
+    <link rel="stylesheet" type="text/css" href={% static "jquery-ui/jquery-ui.min.css" %} />
+    <link rel="stylesheet" type="text/css" href={% static "jquery-ui/jquery-ui.theme.min.css" %} />
+    <link rel="stylesheet" type="text/css" href={% static "css/template.css" %} />
+    <link rel="stylesheet" type="text/css" href={% static "css/print.css" %} media="print" />
+{#	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>#}
+	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+	<script type="text/javascript" src={% static "jquery-ui/jquery-ui.min.js" %}></script>
+{#	<script type="text/javascript" src="http://apps.bdimg.com/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>#}
+{#    <script type="text/javascript" src="/static/bootstrap/js/bootstrap.min.js"></script>#}
+    <script type="text/javascript" src={% static "js/jquery.PrintArea.js" %}></script>
+    <style type="text/css">
+        button{margin-left: 10px;}
+        td{padding:2px 5px;}
+    </style>
+    <script type="text/javascript">
+    $(document).ready(function(){
+        $("button.actBtn").click(function(e){
+            var name = $(this).attr("name");
+            if(name == "tryOne"){
+                $(".printPane:first").printArea();
+            }else if(name == "printAll"){
+                $(".printPane").printArea();
+            }
+
+        });
+    });
+    </script>
+    {% endblock %}
+
+{% load basedata_custom_tag %}
+{% block content %}
+<div class="noprint header">
+    <a href="javascript:history.back();">返回</a>
+    <button type="button" name="tryOne" class="actBtn btn btn-success">试打一张</button>
+    <button type="button" name="printAll" class="actBtn btn btn-danger">全部打印</button>
+</div>
+{% for order in orders %}
+    <div style="width:100%;" class="printPane">
+        <div class="print-header" style="display:table;">
+            <div style="display: table-row;">
+                <div style="width:35%;display:table-cell;">
+                    <label class="txt-block">收件人：{{ order.receiver }}</label>
+                    <label class="txt-block">收件人电话：{{ order.receiver_mobile|default_if_none:""}}</label>
+                </div>
+                <div style="display:table-cell;width:30%;text-align: center;">
+                    <h1><span style="font-size: x-large;">【{{ order.agent |default:'布丁' }}】发货单</span></h1>
+                </div>
+                <div style="width:35%;display:table-cell;">
+                    <label class="txt-block">订单号：{{ order.order_no }}</label>
+                    <label class="txt-block">下单时间：{{ order.order_date }}</label>
+                </div>
+            </div>
+        </div>
+        <div style="width:100%;">
+            <table class="order-table">
+                <thead style="border:solid 1px #000;">
+                    <td width="28px">行号</td>
+                    <td width="170px">商品编码</td>
+                    <td>商品名称</td>
+                    <td>规格</td>
+                    <td>重量</td>
+                    <td>单位</td>
+                    <!--<td>单价</td>-->
+                    <td>数量</td>
+                    <!--<td>小计</td>-->
+                </thead>
+                <tbody>
+                {% for item in order.sub_items %}
+                <tr style="border:solid 1px #000;">
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ item.product.code }}
+                    {% if item.product.s_code %}
+                        ({{ item.product.s_code }})
+                    {% endif %}
+                    </td>
+                    <td>{{ item.product.name }}
+                    {% if item.product.is_package %}
+                        , 含:<br>{{ item.product | listItems | safe }}
+                    {% endif %}
+                    </td>
+                    <td>{{ item.product.spec|default:'-' }}</td>
+                    <td>{{ item.product.weight|default:'-' }}</td>
+                    <td>{{ item.product.unit|default:'-' }}</td>
+{#                    <!--<td>{{ item.deal_price }}</td>-->#}
+                    <td>{{ item.pcs }}</td>
+                    <!--<td>{% widthratio item.deal_price 1 item.pcs %}</td>-->
+                </tr>
+                {% endfor %}
+                <!--<tr style="border:solid 1px #000;">-->
+                    <!--<td colspan="9" style="  text-align: right;">-->
+                        <!--支付总额：{{ order.pay_amount }} (其中，优惠：{{ order.shop_amount_off }}，运费：{{ order.ship_fee }})-->
+                    <!--</td>-->
+                <!--</tr>-->
+                </tbody>
+            </table>
+        </div>
+        {% if order.buyer_note %}
+        <div class="note-pane">
+            买家备注：
+            <div class="print-note">{{ order.buyer_note }}</div>
+        </div>
+        {% endif %}
+        {% if order.note_to_receiver1 %}
+        <div class="note-pane">
+            买家给您留言了哦：
+            <div class="print-note">{{ order.note_to_receiver1 }}</div>
+        </div>
+        {% endif %}
+{#        {% if order.note_to_receiver2 %}#}
+{#        <div class="note-pane">#}
+{#            买家给您留言了哦：#}
+{#            <p>{{ order.note_to_receiver2 }}</p>#}
+{#        </div>#}
+{#        {% endif %}#}
+        <div class="print-footer">
+            <span style="float:left;">收件人地址：{{ order.ship_province|default_if_none:"" }}{{ order.ship_address|default_if_none:""}}</span>
+            <span style="float:right;">打印时间：{% now "Y-m-d H:i" %}</span>
+        </div>
+        <div style="clear: both;"></div>
+    </div>
+{% endfor %}
+
+<div id="printPanel"></div>
+{% endblock %}
